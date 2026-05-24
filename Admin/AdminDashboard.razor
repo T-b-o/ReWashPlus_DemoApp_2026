@@ -1,0 +1,107 @@
+﻿@page "/admin/dashboard"
+@using ReWashPlus_DemoApp.Models
+@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+
+<div class="min-h-screen bg-clickup-dark p-6 space-y-6 text-clickup-text">
+
+    <!-- Dashboard Header -->
+    <header class="mb-6">
+        <h1 class="text-4xl font-bold text-clickup-accent">Admin Dashboard</h1>
+        <p class="text-clickup-muted">Manage bookings, payments, users, and reports efficiently.</p>
+    </header>
+
+    <!-- Top Stats Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
+            <h2 class="text-2xl font-bold text-clickup-text mb-2">Total Bookings</h2>
+            <p class="text-clickup-accent text-3xl font-bold">125</p>
+        </div>
+
+        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
+            <h2 class="text-2xl font-bold text-clickup-text mb-2">Pending Payments</h2>
+            <p class="text-clickup-accent text-3xl font-bold">12</p>
+        </div>
+
+        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
+            <h2 class="text-2xl font-bold text-clickup-text mb-2">Registered Users</h2>
+            <p class="text-clickup-accent text-3xl font-bold">58</p>
+        </div>
+
+        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
+            <h2 class="text-2xl font-bold text-clickup-text mb-2">Reports</h2>
+            <p class="text-clickup-accent text-3xl font-bold">8</p>
+        </div>
+    </section>
+
+    <!-- Main Dashboard Sections -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Recent Bookings -->
+        <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
+            <h2 class="text-xl font-bold text-clickup-accent mb-4">Recent Bookings</h2>
+            <div class="space-y-2 overflow-auto max-h-64">
+                @foreach (var booking in bookings)
+                {
+                    <div class="bg-clickup-dark/70 rounded-xl p-3 flex justify-between items-center hover:bg-clickup-dark transition">
+                        <span>@($"Booking #{booking.Id} — {booking.CustomerName}")</span>
+                        <span class="@GetStatusColor(booking.Status) font-bold">@booking.Status</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Pending Payments -->
+        <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
+            <h2 class="text-xl font-bold text-clickup-accent mb-4">Pending Payments</h2>
+            <div class="space-y-2 overflow-auto max-h-64">
+                <div class="bg-clickup-dark/70 rounded-xl p-3 flex justify-between items-center hover:bg-clickup-dark transition">
+                    <span>Booking #101 — Sarah K.</span>
+                    <span class="text-yellow-400 font-bold">R 200</span>
+                </div>
+                <div class="bg-clickup-dark/70 rounded-xl p-3 flex justify-between items-center hover:bg-clickup-dark transition">
+                    <span>Booking #105 — Tom P.</span>
+                    <span class="text-yellow-400 font-bold">R 350</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
+            <h2 class="text-xl font-bold text-clickup-accent mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-1 gap-4">
+                <button class="btn-primary w-full">Manage Bookings</button>
+                <button class="btn-primary w-full">Manage Payments</button>
+                <button class="btn-primary w-full">Users</button>
+                <button class="btn-primary w-full">Generate Reports</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to title changes so the header updates dynamically
+        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+    }
+
+    private List<Booking> bookings = new List<Booking>
+    {
+        new Booking { Id = 101, CustomerName = "John Doe", Status = JobStatus.Waiting },
+        new Booking { Id = 102, CustomerName = "Jane Smith", Status = JobStatus.InProgress },
+        new Booking { Id = 103, CustomerName = "Mark Lee", Status = JobStatus.Cancelled }
+    };
+
+    private string GetStatusColor(JobStatus status)
+    {
+        return status switch
+        {
+            JobStatus.Waiting => "text-yellow-400",
+            JobStatus.InProgress => "text-green-400",
+            JobStatus.Completed => "text-blue-400",
+            JobStatus.Cancelled => "text-red-500",
+            _ => "text-clickup-text"
+        };
+    }
+}

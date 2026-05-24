@@ -1,0 +1,80 @@
+﻿@page "/"
+@using ReWashPlus_DemoApp.Models
+@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+
+<div class="min-h-screen bg-clickup-dark text-clickup-text p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+
+    <!-- Hero / Welcome Card -->
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light rounded-2xl shadow-clickup p-8 text-center">
+        <h1 class="text-4xl lg:text-5xl font-bold text-clickup-accent mb-3">Welcome Back!</h1>
+        <p class="text-clickup-muted text-lg lg:text-xl max-w-2xl mx-auto">
+            Manage your car washes, track bookings and payments — all in one place.
+        </p>
+    </div>
+
+    <!-- Upcoming Bookings -->
+    <div class="col-span-1 md:col-span-2 bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
+        <h2 class="text-2xl font-bold text-clickup-accent mb-4">Scheduled Bookings</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-grow">
+            <!-- Booking Card -->
+            <div class="bg-gradient-to-br from-clickup-dark to-clickup-light p-4 rounded-xl shadow-clickup hover:scale-105 transition">
+                <h3 class="font-bold text-lg mb-1">Car Wash #123</h3>
+                <p class="text-clickup-muted">📅 2025-09-03</p>
+                <p class="text-clickup-muted">📍 Fourways Mall</p>
+                <span class="inline-block mt-2 px-3 py-1 bg-clickup-green rounded-full text-sm">✅ Confirmed</span>
+            </div>
+
+            <div class="bg-gradient-to-br from-clickup-dark to-clickup-light p-4 rounded-xl shadow-clickup hover:scale-105 transition">
+                <h3 class="font-bold text-lg mb-1">Car Wash #124</h3>
+                <p class="text-clickup-muted">📅 2025-09-05</p>
+                <p class="text-clickup-muted">📍 Fourways Mall</p>
+                <span class="inline-block mt-2 px-3 py-1 bg-clickup-yellow text-black rounded-full text-sm">⏳ Pending</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="col-span-1 bg-clickup-light rounded-2xl shadow-clickup p-6">
+        <h2 class="text-2xl font-bold text-clickup-accent mb-4">Your Stats</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
+                <h3 class="text-3xl font-bold text-clickup-accent">15</h3>
+                <p class="text-clickup-muted text-sm">Total Washes</p>
+            </div>
+            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
+                <h3 class="text-3xl font-bold text-clickup-accent">3</h3>
+                <p class="text-clickup-muted text-sm">Upcoming</p>
+            </div>
+            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
+                <h3 class="text-3xl font-bold text-clickup-accent">R1200</h3>
+                <p class="text-clickup-muted text-sm">Total Spend</p>
+            </div>
+            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
+                <h3 class="text-3xl font-bold text-clickup-accent">250</h3>
+                <p class="text-clickup-muted text-sm">Loyalty Points</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Tips -->
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-gradient-to-r from-clickup-dark to-clickup-light rounded-2xl shadow-clickup p-6">
+        <h2 class="text-xl font-semibold text-clickup-accent mb-4">Quick Tips 💡</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-clickup-dark rounded-xl p-4 shadow-clickup">
+                <p class="text-clickup-muted">✅ Book early on weekends to avoid delays.</p>
+            </div>
+            <div class="bg-clickup-dark rounded-xl p-4 shadow-clickup">
+                <p class="text-clickup-muted">⭐ Earn double loyalty points during promotions.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code{
+    protected override void OnInitialized()
+    {
+        // Subscribe to title changes so the header updates dynamically
+        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,113 @@
+﻿@inherits LayoutComponentBase
+
+<!-- Mobile Hamburger Button -->
+<div class="lg:hidden fixed top-4 left-4 z-50">
+    <button class="p-3 text-clickup-text bg-clickup-accent rounded-lg shadow-clickup"
+            @onclick="ToggleMobileMenu">
+        <i class="fas fa-bars"></i>
+    </button>
+</div>
+
+<div class="flex">
+
+    <!-- Desktop Sidebar -->
+    <div class="@($"hidden lg:flex flex-col bg-clickup-light text-clickup-text shadow-clickup transition-all duration-300 ease-in-out {(isCollapsed ? "w-16" : "w-64")}")">
+        @SidebarContent()
+        <!-- Collapse Button -->
+        <button @onclick="ToggleCollapse"
+                aria-expanded="@(!isCollapsed)"
+                aria-label="Toggle sidebar"
+                class="p-3 border-t border-clickup-border hover:bg-clickup-dark transition-colors duration-200">
+            <i class="fas @(isCollapsed ? "fa-chevron-right" : "fa-chevron-left")"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    @if (isMobileMenuOpen)
+    {
+        <div class="fixed inset-0 bg-black/50 z-40" @onclick="ToggleMobileMenu"></div>
+        <div class="fixed top-0 left-0 h-full w-64 bg-clickup-light text-clickup-text shadow-clickup z-50 flex flex-col transition-transform duration-300">
+            @SidebarContent(isMobile: true)
+            <button class="p-3 border-t border-clickup-border hover:bg-clickup-dark transition-colors duration-200"
+                    @onclick="ToggleMobileMenu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private RenderFragment SidebarContent(bool isMobile = false) => builder =>
+    {
+        int seq = 0;
+
+        // Logo
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "flex items-center justify-between px-4 py-5 border-b border-clickup-border");
+        builder.OpenElement(seq++, "span");
+        builder.AddAttribute(seq++, "class", $"text-3xl font-extrabold text-clickup-accent tracking-wide transition-opacity duration-300 {(isCollapsed && !isMobile ? "opacity-0" : "opacity-100")}");
+        builder.AddContent(seq++, "R+");
+        builder.CloseElement();
+        builder.CloseElement();
+
+        // Menu container
+        builder.OpenElement(seq++, "ul");
+        builder.AddAttribute(seq++, "class", "flex-1 overflow-auto mt-6 px-2 space-y-1");
+
+        // User Section
+        builder.OpenElement(seq++, "li");
+        builder.AddAttribute(seq++, "class", $"text-clickup-muted uppercase tracking-wide text-xs mb-3 transition-opacity duration-300 {(isCollapsed && !isMobile ? "opacity-0" : "opacity-100")}");
+        builder.AddContent(seq++, "User");
+        builder.CloseElement();
+
+        foreach (var link in UserLinks)
+        {
+            builder.OpenComponent<NavLink>(seq++);
+            builder.AddAttribute(seq++, "href", link.Href);
+            builder.AddAttribute(seq++, "class", "flex items-center px-3 py-2 rounded-lg hover:bg-clickup-dark transition-colors duration-200");
+            builder.AddAttribute(seq++, "Match", link.Match);
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b =>
+            {
+                int s = 0;
+                b.OpenElement(s++, "i");
+                b.AddAttribute(s++, "class", $"{link.Icon} text-clickup-accent w-5");
+                b.CloseElement();
+
+                b.OpenElement(s++, "span");
+                b.AddAttribute(s++, "class", $"ml-2 whitespace-nowrap overflow-hidden transition-all duration-300 {(isCollapsed && !isMobile ? "max-w-0 opacity-0" : "max-w-full opacity-100")}");
+                b.AddContent(s++, link.Label);
+                b.CloseElement();
+            }));
+            builder.CloseComponent();
+        }
+
+        // Admin Section
+        builder.OpenElement(seq++, "li");
+        builder.AddAttribute(seq++, "class", $"mt-8 text-clickup-muted uppercase tracking-wide text-xs mb-3 transition-opacity duration-300 {(isCollapsed && !isMobile ? "opacity-0" : "opacity-100")}");
+        builder.AddContent(seq++, "Admin");
+        builder.CloseElement();
+
+        foreach (var link in AdminLinks)
+        {
+            builder.OpenComponent<NavLink>(seq++);
+            builder.AddAttribute(seq++, "href", link.Href);
+            builder.AddAttribute(seq++, "class", "flex items-center px-3 py-2 rounded-lg hover:bg-clickup-dark transition-colors duration-200");
+            builder.AddAttribute(seq++, "Match", link.Match);
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b =>
+            {
+                int s = 0;
+                b.OpenElement(s++, "i");
+                b.AddAttribute(s++, "class", $"{link.Icon} text-clickup-accent w-5");
+                b.CloseElement();
+
+                b.OpenElement(s++, "span");
+                b.AddAttribute(s++, "class", $"ml-2 whitespace-nowrap overflow-hidden transition-all duration-300 {(isCollapsed && !isMobile ? "max-w-0 opacity-0" : "max-w-full opacity-100")}");
+                b.AddContent(s++, link.Label);
+                b.CloseElement();
+            }));
+            builder.CloseComponent();
+        }
+
+        builder.CloseElement(); // ul
+    };
+}

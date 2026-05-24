@@ -1,0 +1,155 @@
+﻿@page "/book"
+@using ReWashPlus_DemoApp.Models
+@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.BookingService BookingService
+@inject IJSRuntime JS
+
+<div class="min-h-screen bg-clickup-dark text-clickup-text px-4 py-8">
+
+    <!-- Page Header -->
+    <h1 class="text-4xl font-bold text-clickup-accent mb-6 text-center">Book a Wash — Rewash+</h1>
+
+    <!-- Network Status -->
+    <div class="mb-6 text-center">
+        <p>
+            Network:
+            <strong class="@(isOnline ? "text-clickup-accent" : "text-clickup-red")">@(isOnline ? "Online" : "Offline")</strong>
+        </p>
+    </div>
+
+    <!-- Booking Form Card -->
+    <div class="bg-clickup-light rounded-modal shadow-clickup p-6 max-w-lg mx-auto mb-8 space-y-4">
+        <EditForm Model="bookingModel" OnValidSubmit="HandleValidSubmit" class="space-y-4">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-clickup-red" />
+
+            <!-- Full Name -->
+            <div class="relative">
+                <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+                <InputText @bind-Value="bookingModel.CustomerName"
+                           placeholder="Full Name"
+                           class="input pl-12" />
+            </div>
+
+            <!-- Phone -->
+            <div class="relative">
+                <i class="fas fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+                <InputText @bind-Value="bookingModel.PhoneNumber"
+                           placeholder="Phone Number"
+                           class="input pl-12" />
+            </div>
+
+            <!-- Email -->
+            <div class="relative">
+                <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+                <InputText @bind-Value="bookingModel.Email"
+                           placeholder="Email"
+                           class="input pl-12" />
+            </div>
+
+            <!-- Service Type -->
+            <div class="relative">
+                <i class="fas fa-car-wash absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+                <InputSelect @bind-Value="bookingModel.ServiceType"
+                             class="input pl-12">
+                    <option value="Wash">Wash</option>
+                    <option value="Interior">Interior</option>
+                    <option value="Full Valet">Full Valet</option>
+                </InputSelect>
+            </div>
+
+            <!-- Appointment Date -->
+            <div class="relative">
+                <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+                <InputDate @bind-Value="bookingModel.AppointmentAt"
+                           class="input pl-12" />
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-primary w-full">Save Booking</button>
+        </EditForm>
+
+        <!-- Feedback Message -->
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="mt-4 p-3 bg-clickup-dark/70 text-clickup-text rounded shadow-clickup">@message</div>
+        }
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="max-w-4xl mx-auto space-y-4">
+        <h2 class="text-2xl font-bold text-clickup-accent mb-2">Recent Bookings</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var b in recentBookings)
+            {
+                <div class="bg-clickup-light rounded-xl shadow-clickup p-4 flex flex-col justify-between hover:scale-105 transition-transform">
+                    <div>
+                        <h3 class="font-bold text-clickup-accent mb-1">@b.CustomerName</h3>
+                        <p class="text-clickup-text text-sm mb-1">Service: <span class="font-semibold">@b.ServiceType</span></p>
+                        <p class="text-clickup-text text-sm mb-1">Date: <span class="font-semibold">@b.AppointmentAt.ToShortDateString()</span></p>
+                        <p class="text-clickup-text text-sm mb-1">Phone: <span class="font-semibold">@b.PhoneNumber</span></p>
+                        <p class="text-clickup-text text-sm mb-2">Status: <span class="status-badge @GetStatusColor(b.Status)">@b.Status</span></p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private Booking bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) };
+    private bool isOnline = false;
+    private string? message;
+
+    // Mock recent bookings
+    private List<Booking> recentBookings = new List<Booking>
+    {
+        new Booking { Id = 101, CustomerName="John Doe", ServiceType="Wash", AppointmentAt=DateTime.Today, PhoneNumber="0812345678", Status=JobStatus.InProgress },
+        new Booking { Id = 102, CustomerName="John Doe", ServiceType="Interior", AppointmentAt=DateTime.Today.AddDays(1), PhoneNumber="0823456789", Status=JobStatus.Waiting },
+        new Booking { Id = 103, CustomerName="John Doe", ServiceType="Full Valet", AppointmentAt=DateTime.Today.AddDays(2), PhoneNumber="0834567890", Status=JobStatus.InProgress }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        isOnline = await JS.InvokeAsync<bool>("navigator.onLine");
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await BookingService.SaveBookingAsync(bookingModel);
+        message = "Booking saved locally. It will sync when you're online.";
+
+        // Add to recent bookings immediately
+        recentBookings.Insert(0, new Booking
+        {
+            Id = bookingModel.Id,
+            CustomerName = bookingModel.CustomerName,
+            ServiceType = bookingModel.ServiceType,
+            AppointmentAt = bookingModel.AppointmentAt,
+            PhoneNumber = bookingModel.PhoneNumber,
+            Status = JobStatus.Waiting
+        });
+
+        bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) }; // reset form
+        StateHasChanged();
+    }
+
+    private string GetStatusColor(JobStatus status)
+    {
+        return status switch
+        {
+            JobStatus.Waiting => "status-waiting",
+            JobStatus.InProgress => "status-inprogress",
+            JobStatus.Cancelled => "status-cancelled",
+            JobStatus.Completed => "status-completed",
+            _ => ""
+        };
+    }
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to title changes so the header updates dynamically
+        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+    }
+}

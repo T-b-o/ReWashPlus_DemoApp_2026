@@ -1,0 +1,15 @@
+@page "/notifications"
+@using ReWashPlus_DemoApp.Services
+@inject PageTitleService PageTitleService
+
+<div class="p-6 bg-clickup-dark min-h-screen text-clickup-text">
+    <h1 class="text-2xl font-bold text-clickup-accent">Notifications</h1>
+    <p class="text-sm text-clickup-muted">User notifications will appear here.</p>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+    }
+}

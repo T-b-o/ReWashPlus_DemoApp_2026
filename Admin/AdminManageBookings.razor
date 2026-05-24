@@ -1,0 +1,133 @@
+﻿@page "/admin/manage-bookings"
+@using ReWashPlus_DemoApp.Models
+@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+
+<div class="min-h-screen bg-clickup-dark p-6 space-y-6 text-clickup-text">
+
+    <!-- Header -->
+    <header class="mb-6">
+        <h1 class="text-4xl font-bold text-clickup-accent">Manage Bookings</h1>
+        <p class="text-clickup-muted">View, approve, or manage all bookings in your system.</p>
+    </header>
+
+    <!-- Current Bookings Grid -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @foreach (var booking in bookings)
+        {
+            <div class="bg-clickup-light p-6 rounded-2xl shadow-clickup flex flex-col justify-between hover:scale-105 transition-transform">
+
+                <!-- Booking Info -->
+                <div class="mb-4 space-y-1">
+                    <h2 class="text-xl font-bold text-clickup-accent">Booking #@booking.Id — @booking.CustomerName</h2>
+                    <p>Service: <span class="font-semibold text-clickup-text">@booking.ServiceType</span></p>
+                    <p>Date: <span class="font-semibold text-clickup-text">@booking.AppointmentAt.ToShortDateString()</span></p>
+                    <p>Phone: <span class="font-semibold text-clickup-text">@booking.PhoneNumber</span></p>
+                    <p>Email: <span class="font-semibold text-clickup-text">@booking.Email</span></p>
+                    <p>
+                        Status:
+                        <span class="status-badge @GetStatusColor(booking.Status) font-bold">@booking.Status</span>
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-2">
+                    <button class="btn-primary flex-1"
+                            @onclick="() => ApproveBooking(booking)">
+                        Approve
+                    </button>
+                    <button class="flex-1 bg-clickup-red hover:bg-red-500 text-white font-bold py-2 rounded-xl shadow-clickup transition"
+                            @onclick="() => RejectBooking(booking)">
+                        Reject
+                    </button>
+                    <button class="flex-1 bg-clickup-dark/70 hover:bg-clickup-dark text-clickup-text font-bold py-2 rounded-xl shadow-clickup transition"
+                            @onclick="() => ViewDetails(booking)">
+                        Details
+                    </button>
+                </div>
+            </div>
+        }
+    </section>
+
+    <!-- Old / Completed Bookings Table -->
+    <section class="mt-8">
+        <h2 class="text-2xl font-bold text-clickup-accent mb-4">Old Bookings</h2>
+        <div class="overflow-auto rounded-2xl shadow-clickup bg-clickup-light">
+            <table class="min-w-full divide-y divide-clickup-border">
+                <thead class="bg-clickup-dark/80">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-clickup-text">ID</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-clickup-text">Customer</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-clickup-text">Service</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-clickup-text">Date</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-clickup-text">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-clickup-border">
+                    @foreach (var booking in oldBookings)
+                    {
+                        <tr class="hover:bg-clickup-dark transition-colors">
+                            <td class="px-6 py-3 text-clickup-text">@booking.Id</td>
+                            <td class="px-6 py-3 text-clickup-text">@booking.CustomerName</td>
+                            <td class="px-6 py-3 text-clickup-text">@booking.ServiceType</td>
+                            <td class="px-6 py-3 text-clickup-text">@booking.AppointmentAt.ToShortDateString()</td>
+                            <td class="px-6 py-3 font-bold @GetStatusColor(booking.Status)">@booking.Status</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to title changes so the header updates dynamically
+        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+    }
+
+    // Current bookings
+    private List<Booking> bookings = new List<Booking>
+    {
+        new Booking { Id = 101, CustomerName="John Doe", ServiceType="Wash", AppointmentAt=DateTime.Today.AddDays(1), PhoneNumber="0812345678", Email="john@example.com", Status=JobStatus.Waiting },
+        new Booking { Id = 102, CustomerName="Jane Smith", ServiceType="Interior", AppointmentAt=DateTime.Today.AddDays(2), PhoneNumber="0823456789", Email="jane@example.com", Status=JobStatus.InProgress },
+        new Booking { Id = 103, CustomerName="Mark Lee", ServiceType="Full Valet", AppointmentAt=DateTime.Today.AddDays(3), PhoneNumber="0834567890", Email="mark@example.com", Status=JobStatus.Cancelled }
+    };
+
+    // Old bookings
+    private List<Booking> oldBookings = new List<Booking>
+    {
+        new Booking { Id = 90, CustomerName="Alice Brown", ServiceType="Wash", AppointmentAt=DateTime.Today.AddDays(-10), Status=JobStatus.Completed },
+        new Booking { Id = 91, CustomerName="Bob Green", ServiceType="Interior", AppointmentAt=DateTime.Today.AddDays(-8), Status=JobStatus.Completed },
+        new Booking { Id = 92, CustomerName="Charlie White", ServiceType="Full Valet", AppointmentAt=DateTime.Today.AddDays(-6), Status=JobStatus.Cancelled },
+        new Booking { Id = 93, CustomerName="Dana Blue", ServiceType="Wash", AppointmentAt=DateTime.Today.AddDays(-5), Status=JobStatus.Completed },
+    };
+
+    private void ApproveBooking(Booking booking)
+    {
+        booking.Status = JobStatus.InProgress;
+    }
+
+    private void RejectBooking(Booking booking)
+    {
+        booking.Status = JobStatus.Cancelled;
+    }
+
+    private void ViewDetails(Booking booking)
+    {
+        // Implement modal or navigate to details page
+    }
+
+    private string GetStatusColor(JobStatus status)
+    {
+        return status switch
+        {
+            JobStatus.Waiting => "status-waiting",
+            JobStatus.InProgress => "status-inprogress",
+            JobStatus.Cancelled => "status-cancelled",
+            JobStatus.Completed => "status-completed",
+            _ => "text-clickup-text"
+        };
+    }
+}

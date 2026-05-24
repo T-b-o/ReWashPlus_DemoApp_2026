@@ -1,0 +1,76 @@
+﻿@page "/bookings"
+@page "/my-bookings"
+@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+
+<div class="p-4 sm:p-6 space-y-6 bg-clickup-dark min-h-screen text-clickup-text">
+
+    <!-- Header + Search -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 class="text-3xl font-bold text-clickup-accent">Bookings</h1>
+
+        <div class="relative w-full sm:w-80">
+            <input type="text"
+                   class="input pl-10"
+                   placeholder="Search by customer or ID..."
+                   @bind="SearchTerm"
+                   @bind:event="oninput" />
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto bg-clickup-card rounded-2xl shadow-clickup">
+        <table class="min-w-full divide-y divide-clickup-border">
+            <thead class="bg-clickup-dark/90">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Booking ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Customer</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Time</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-clickup-accent uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-clickup-border">
+                @if (!FilteredBookings.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-6 text-center text-sm text-clickup-muted">
+                            No bookings found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var booking in FilteredBookings)
+                    {
+                        <tr class="hover:bg-clickup-dark/70 transition">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-clickup-text">@booking.Id</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-clickup-accent">@booking.CustomerName</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-clickup-text">@booking.Date.ToString("yyyy-MM-dd")</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-clickup-text">@booking.Time</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="status-badge @GetStatusBadgeClass(booking.Status)">@booking.Status</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex flex-wrap gap-2 justify-end">
+                                <button class="btn-primary flex items-center px-3 py-1 rounded-xl"
+                                        @onclick="() => ViewBooking(booking.Id)">
+                                    <i class="fas fa-eye mr-2"></i> View
+                                </button>
+                                <button class="btn-secondary flex items-center px-3 py-1 rounded-xl text-clickup-text"
+                                        @onclick="() => EditBooking(booking.Id)">
+                                    <i class="fas fa-pen mr-2"></i> Edit
+                                </button>
+                                <button class="flex items-center px-3 py-1 rounded-xl bg-clickup-red text-white hover:opacity-90 transition"
+                                        @onclick="() => CancelBooking(booking.Id)">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
