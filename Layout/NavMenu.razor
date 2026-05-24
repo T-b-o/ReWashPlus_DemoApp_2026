@@ -43,10 +43,10 @@
 
         // Logo
         builder.OpenElement(seq++, "div");
-        builder.AddAttribute(seq++, "class", "flex items-center justify-between px-4 py-5 border-b border-clickup-border");
+        builder.AddAttribute(seq++, "class", $"flex items-center border-b border-clickup-border transition-all duration-300 {(isCollapsed && !isMobile ? "justify-center py-5" : "px-4 py-5")}");
         builder.OpenElement(seq++, "span");
-        builder.AddAttribute(seq++, "class", $"text-3xl font-extrabold text-clickup-accent tracking-wide transition-opacity duration-300 {(isCollapsed && !isMobile ? "opacity-0" : "opacity-100")}");
-        builder.AddContent(seq++, "R+");
+        builder.AddAttribute(seq++, "class", "text-2xl font-extrabold text-clickup-accent tracking-wide whitespace-nowrap transition-all duration-300");
+        builder.AddContent(seq++, isCollapsed && !isMobile ? "R+" : "ReWash+");
         builder.CloseElement();
         builder.CloseElement();
 
@@ -66,6 +66,7 @@
             builder.AddAttribute(seq++, "href", link.Href);
             builder.AddAttribute(seq++, "class", "flex items-center px-3 py-2 rounded-lg hover:bg-clickup-dark transition-colors duration-200");
             builder.AddAttribute(seq++, "Match", link.Match);
+            builder.AddAttribute(seq++, "title", isCollapsed && !isMobile ? link.Label : null);
             builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b =>
             {
                 int s = 0;
@@ -93,6 +94,7 @@
             builder.AddAttribute(seq++, "href", link.Href);
             builder.AddAttribute(seq++, "class", "flex items-center px-3 py-2 rounded-lg hover:bg-clickup-dark transition-colors duration-200");
             builder.AddAttribute(seq++, "Match", link.Match);
+            builder.AddAttribute(seq++, "title", isCollapsed && !isMobile ? link.Label : null);
             builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b =>
             {
                 int s = 0;
