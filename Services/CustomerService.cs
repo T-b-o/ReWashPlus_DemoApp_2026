@@ -10,19 +10,24 @@ namespace ReWashPlus_DemoApp.Services
     /// <summary>
     /// Service for managing customers in offline-first mode.
     /// Persists customers to LocalStorage for offline access.
+    /// All operations are scoped to the current tenant.
     /// </summary>
     public class CustomerService
     {
         private const string CustomersKey = "rw_customers";
-        private const string NextIdKey = "rw_customer_next_id";
-        
+        private const string NextIdKey    = "rw_customer_next_id";
+
         private readonly ILocalStorageService _localStorage;
+        private readonly TenantContextService _tenantContext;
         private List<Customer>? _cachedCustomers;
         private int _nextId = 1;
 
-        public CustomerService(ILocalStorageService localStorage)
+        public CustomerService(
+            ILocalStorageService localStorage,
+            TenantContextService tenantContext)
         {
-            _localStorage = localStorage;
+            _localStorage  = localStorage;
+            _tenantContext = tenantContext;
         }
 
         /// <summary>
@@ -44,7 +49,9 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<List<Customer>> GetAllAsync()
         {
             await EnsureInitializedAsync();
-            return _cachedCustomers ?? new List<Customer>();
+            return _cachedCustomers!
+                .Where(c => c.TenantId == _tenantContext.TenantId && c.IsActive)
+                .ToList();
         }
 
         /// <summary>
@@ -53,7 +60,9 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<Customer?> GetByIdAsync(int id)
         {
             await EnsureInitializedAsync();
-            return _cachedCustomers?.FirstOrDefault(c => c.Id == id);
+            return _cachedCustomers?.FirstOrDefault(
+                c => c.Id == id &&
+                     c.TenantId == _tenantContext.TenantId);
         }
 
         /// <summary>
@@ -98,9 +107,13 @@ namespace ReWashPlus_DemoApp.Services
                 throw new InvalidOperationException($"Customer with phone {customer.PhoneNumber} already exists");
             }
 
-            customer.Id = _nextId++;
-            customer.CreatedAt = DateTime.UtcNow;
-            customer.UpdatedAt = DateTime.UtcNow;
+            _tenantContext.ApplyContext(customer);
+
+            customer.Id         = _nextId++;
+            customer.CustomerId = Guid.NewGuid();
+            customer.SyncState  = SyncStatus.Pending;
+            customer.CreatedAt  = DateTime.UtcNow;
+            customer.UpdatedAt  = DateTime.UtcNow;
 
             _cachedCustomers?.Add(customer);
             await PersistAsync();

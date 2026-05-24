@@ -36,6 +36,9 @@
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <!-- RewashPlus offline-first JS modules (must load after blazor.webassembly.js) -->
+    <script src="js/offline-db.js"></script>
+    <script src="js/connectivity.js"></script>
 </body>
 
 </html>

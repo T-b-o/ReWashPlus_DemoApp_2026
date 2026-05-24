@@ -8,18 +8,27 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Register HttpClient
+// HttpClient
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Register Blazored.LocalStorage
+// Blazored.LocalStorage
 builder.Services.AddBlazoredLocalStorage();
 
-// Register domain services
+// ── Infrastructure / context services (register first — others depend on these) ──
+builder.Services.AddScoped<TenantContextService>();
+builder.Services.AddScoped<ConnectivityService>();
+builder.Services.AddScoped<OfflineDatabaseService>();
+
+// ── Domain / feature services ──────────────────────────────────────────────────
 builder.Services.AddScoped<PageTitleService>();
 builder.Services.AddScoped<CustomerService>();
-builder.Services.AddScoped<CarService>();
+builder.Services.AddScoped<VehicleService>();       // replaces CarService
 builder.Services.AddScoped<ServiceService>();
 builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<PaymentService>();
+
+// ── Cross-cutting services ─────────────────────────────────────────────────────
+builder.Services.AddScoped<SyncService>();
+builder.Services.AddScoped<FeatureToggleService>();
 
 await builder.Build().RunAsync();

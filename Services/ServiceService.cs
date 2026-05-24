@@ -9,20 +9,25 @@ namespace ReWashPlus_DemoApp.Services
 {
     /// <summary>
     /// Service for managing services (service catalog with pricing).
-    /// Services are typically cached and don't change often.
+    /// Services are scoped per branch — different branches can have different catalogs.
+    /// Cached locally with a 24-hour TTL; refreshed from API when online.
     /// </summary>
     public class ServiceService
     {
-        private const string ServicesKey = "rw_services";
-        private const string LastSyncKey = "rw_services_last_sync";
-        private const int CacheDurationHours = 24;
-        
+        private const string ServicesKey      = "rw_services";
+        private const string LastSyncKey      = "rw_services_last_sync";
+        private const int    CacheDurationHours = 24;
+
         private readonly ILocalStorageService _localStorage;
+        private readonly TenantContextService _tenantContext;
         private List<Service>? _cachedServices;
 
-        public ServiceService(ILocalStorageService localStorage)
+        public ServiceService(
+            ILocalStorageService localStorage,
+            TenantContextService tenantContext)
         {
-            _localStorage = localStorage;
+            _localStorage  = localStorage;
+            _tenantContext = tenantContext;
         }
 
         /// <summary>
@@ -36,6 +41,12 @@ namespace ReWashPlus_DemoApp.Services
             if (_cachedServices == null || !_cachedServices.Any())
             {
                 _cachedServices = GetDefaultServices();
+                // Stamp default services with the current tenant/branch context
+                foreach (var svc in _cachedServices)
+                {
+                    svc.TenantId = _tenantContext.TenantId;
+                    svc.BranchId = _tenantContext.BranchId;
+                }
                 await PersistAsync();
             }
         }
@@ -46,7 +57,12 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<List<Service>> GetAllAsync()
         {
             await EnsureInitializedAsync();
-            return _cachedServices?.Where(s => s.IsActive).ToList() ?? new List<Service>();
+            return _cachedServices?
+                .Where(s =>
+                    s.IsActive &&
+                    s.TenantId == _tenantContext.TenantId &&
+                    s.BranchId == _tenantContext.BranchId)
+                .ToList() ?? new List<Service>();
         }
 
         /// <summary>
@@ -108,62 +124,16 @@ namespace ReWashPlus_DemoApp.Services
         /// </summary>
         private static List<Service> GetDefaultServices()
         {
+            // Note: TenantId and BranchId are set by ServiceService.InitializeAsync
+            // after TenantContextService resolves; these values are placeholders.
             return new List<Service>
             {
-                new Service
-                {
-                    Id = 1,
-                    Name = "Basic Wash",
-                    Description = "Exterior wash with water and soap",
-                    Price = 150,
-                    DurationMinutes = 20,
-                    IsActive = true
-                },
-                new Service
-                {
-                    Id = 2,
-                    Name = "Deluxe Wash",
-                    Description = "Exterior wash with wax and polish",
-                    Price = 250,
-                    DurationMinutes = 35,
-                    IsActive = true
-                },
-                new Service
-                {
-                    Id = 3,
-                    Name = "Interior Clean",
-                    Description = "Vacuum and wipe down interior",
-                    Price = 200,
-                    DurationMinutes = 30,
-                    IsActive = true
-                },
-                new Service
-                {
-                    Id = 4,
-                    Name = "Full Valet",
-                    Description = "Complete exterior and interior service",
-                    Price = 500,
-                    DurationMinutes = 90,
-                    IsActive = true
-                },
-                new Service
-                {
-                    Id = 5,
-                    Name = "Engine Wash",
-                    Description = "Engine bay cleaning and degreasing",
-                    Price = 200,
-                    DurationMinutes = 45,
-                    IsActive = true
-                },
-                new Service
-                {
-                    Id = 6,
-                    Name = "Tire Shine",
-                    Description = "Tire cleaning and shine application",
-                    Price = 100,
-                    DurationMinutes = 15,
-                    IsActive = true
-                }
+                new Service { Id = 1, Name = "Basic Wash",    Description = "Exterior wash with water and soap",           Price = 150, DurationMinutes = 20, IsActive = true },
+                new Service { Id = 2, Name = "Deluxe Wash",   Description = "Exterior wash with wax and polish",           Price = 250, DurationMinutes = 35, IsActive = true },
+                new Service { Id = 3, Name = "Interior Clean",Description = "Vacuum and wipe down interior",               Price = 200, DurationMinutes = 30, IsActive = true },
+                new Service { Id = 4, Name = "Full Valet",    Description = "Complete exterior and interior service",      Price = 500, DurationMinutes = 90, IsActive = true },
+                new Service { Id = 5, Name = "Engine Wash",   Description = "Engine bay cleaning and degreasing",         Price = 200, DurationMinutes = 45, IsActive = true },
+                new Service { Id = 6, Name = "Tire Shine",    Description = "Tire cleaning and shine application",        Price = 100, DurationMinutes = 15, IsActive = true },
             };
         }
     }

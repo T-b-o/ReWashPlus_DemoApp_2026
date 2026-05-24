@@ -10,17 +10,17 @@ module.exports = {
         extend: {
             colors: {
                 clickup: {
-                    dark: "#0E0E10",
-                    light: "#17171A",
-                    border: "#2C2C2C",
-                    text: "#E6E7EA",
-                    muted: "#9AA0B4",
-                    accent: "#7B68EE",
-                    green: "#2DD4BF", // success accent
-                    yellow: "#FBBF24", // warning accent
-                    red: "#FF6B6B", // error accent
-                    blue: "#3B82F6", // info accent
-                    panel: "#0F1724"
+                    dark: "#1D1D2D",    // base app background
+                    light: "#252540",   // cards, sidebar, elevated surfaces
+                    surface: "#2D2D48", // inputs, hover rows
+                    border: "#363658",  // dividers
+                    text: "#E2E4EF",    // primary text
+                    muted: "#8589A5",   // secondary / placeholder text
+                    accent: "#7B68EE",  // purple accent
+                    green: "#23C8B0",   // success
+                    yellow: "#F59E0B",  // warning
+                    red: "#F87171",     // danger
+                    blue: "#60A5FA",    // info
                 },
             },
             borderRadius: {
@@ -28,7 +28,7 @@ module.exports = {
                 xl: "1rem"
             },
             boxShadow: {
-                clickup: "0 6px 24px rgba(2,6,23,0.6)",
+                clickup: "0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04)",
             },
             keyframes: {
                 fadeInScale: {
@@ -39,11 +39,7 @@ module.exports = {
             animation: {
                 modal: "fadeInScale 0.25s ease-out forwards",
             },
-            backgroundImage: {
-                'clickup-sidebar': 'linear-gradient(180deg, #0E0E10 0%, #17171A 100%)',
-                'clickup-main': 'linear-gradient(180deg, #0E0E10 0%, #0F1724 100%)',
-                'clickup-card': 'linear-gradient(180deg, #17171A 0%, #2C2C2C 100%)',
-            },
+
         },
     },
     plugins: [
@@ -73,11 +69,11 @@ module.exports = {
                     "@apply px-4 py-2 rounded-lg bg-clickup-accent text-white hover:opacity-90 transition": {},
                 },
                 ".btn-secondary": {
-                    "@apply px-4 py-2 rounded-lg bg-clickup-dark text-clickup-muted hover:text-clickup-text transition": {},
+                    "@apply px-4 py-2 rounded-lg bg-clickup-surface text-clickup-muted hover:text-clickup-text transition": {},
                 },
                 // Inputs
                 ".input": {
-                    "@apply w-full rounded-lg bg-clickup-dark border border-clickup-border p-3 text-clickup-text placeholder-clickup-muted focus:outline-none focus:ring-2 focus:ring-clickup-accent": {},
+                    "@apply w-full rounded-lg bg-clickup-surface border border-clickup-border p-3 text-clickup-text placeholder-clickup-muted focus:outline-none focus:ring-2 focus:ring-clickup-accent": {},
                 },
                 // Badges / status chips
                 ".status-badge": {
