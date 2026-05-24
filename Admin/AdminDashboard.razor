@@ -2,7 +2,7 @@
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 
-<div class="min-h-screen bg-clickup-dark p-6 space-y-6 text-clickup-text">
+<div class="p-6 space-y-6">
 
     <!-- Dashboard Header -->
     <header class="mb-6">
@@ -12,23 +12,23 @@
 
     <!-- Top Stats Cards -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
-            <h2 class="text-2xl font-bold text-clickup-text mb-2">Total Bookings</h2>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
+            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Total Bookings</h2>
             <p class="text-clickup-accent text-3xl font-bold">125</p>
         </div>
 
-        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
-            <h2 class="text-2xl font-bold text-clickup-text mb-2">Pending Payments</h2>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
+            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Pending Payments</h2>
             <p class="text-clickup-accent text-3xl font-bold">12</p>
         </div>
 
-        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
-            <h2 class="text-2xl font-bold text-clickup-text mb-2">Registered Users</h2>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
+            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Registered Users</h2>
             <p class="text-clickup-accent text-3xl font-bold">58</p>
         </div>
 
-        <div class="bg-gradient-to-r from-clickup-dark to-clickup-light p-6 rounded-2xl shadow-clickup hover:scale-105 transition-transform">
-            <h2 class="text-2xl font-bold text-clickup-text mb-2">Reports</h2>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
+            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Reports</h2>
             <p class="text-clickup-accent text-3xl font-bold">8</p>
         </div>
     </section>
@@ -42,7 +42,7 @@
             <div class="space-y-2 overflow-auto max-h-64">
                 @foreach (var booking in bookings)
                 {
-                    <div class="bg-clickup-dark/70 rounded-xl p-3 flex justify-between items-center hover:bg-clickup-dark transition">
+                    <div class="bg-clickup-surface border border-clickup-border rounded-xl p-3 flex justify-between items-center hover:border-clickup-accent transition">
                         <span>@($"Booking #{booking.Id} — {booking.CustomerName}")</span>
                         <span class="@GetStatusColor(booking.Status) font-bold">@booking.Status</span>
                     </div>
@@ -54,13 +54,13 @@
         <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
             <h2 class="text-xl font-bold text-clickup-accent mb-4">Pending Payments</h2>
             <div class="space-y-2 overflow-auto max-h-64">
-                <div class="bg-clickup-dark/70 rounded-xl p-3 flex justify-between items-center hover:bg-clickup-dark transition">
+                <div class="bg-clickup-surface border border-clickup-border rounded-lg p-3 flex justify-between items-center hover:border-clickup-accent transition">
                     <span>Booking #101 — Sarah K.</span>
-                    <span class="text-yellow-400 font-bold">R 200</span>
+                    <span class="text-clickup-yellow font-bold">R 200</span>
                 </div>
-                <div class="bg-clickup-dark/70 rounded-xl p-3 flex justify-between items-center hover:bg-clickup-dark transition">
+                <div class="bg-clickup-surface border border-clickup-border rounded-lg p-3 flex justify-between items-center hover:border-clickup-accent transition">
                     <span>Booking #105 — Tom P.</span>
-                    <span class="text-yellow-400 font-bold">R 350</span>
+                    <span class="text-clickup-yellow font-bold">R 350</span>
                 </div>
             </div>
         </div>

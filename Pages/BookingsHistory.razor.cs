@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
+using ReWashPlus_DemoApp.Models;
+using ReWashPlus_DemoApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,56 +8,72 @@ using System.Linq;
 namespace ReWashPlus_DemoApp.Pages
 {
     /// <summary>
-    /// Code-behind for Bookings.razor. Keeps UI markup clean and testable.
+    /// Code-behind for BookingsHistory.razor.
+    /// Uses the canonical Models.Booking type with AppointmentAt and JobStatus.
     /// </summary>
     public partial class BookingsHistory : ComponentBase
     {
         #region State
 
-        /// <summary>
-        /// Search filter text (customer name or booking ID).
-        /// </summary>
         protected string SearchTerm { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Backing store for all bookings. In production, load from API.
-        /// </summary>
         private List<Booking> _allBookings = new();
 
-        /// <summary>
-        /// Computed, filtered list based on <see cref="SearchTerm"/>.
-        /// </summary>
         protected IEnumerable<Booking> FilteredBookings =>
             string.IsNullOrWhiteSpace(SearchTerm)
                 ? _allBookings
                 : _allBookings.Where(b =>
-                       (!string.IsNullOrEmpty(b.CustomerName) &&
-                        b.CustomerName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
-                       || b.Id.ToString().Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+                    (!string.IsNullOrEmpty(b.CustomerName) &&
+                     b.CustomerName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    b.Id.ToString().Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
 
         #endregion
 
         #region Services
 
-        [Inject] protected NavigationManager Nav { get; set; } = default!;
+        [Inject] protected NavigationManager                       Nav              { get; set; } = default!;
+        [Inject] protected PageTitleService                        PageTitleService { get; set; } = default!;
+        [Inject] protected ReWashPlus_DemoApp.Services.JobService  JobService       { get; set; } = default!;
 
         #endregion
 
         #region Lifecycle
 
-        /// <summary>
-        /// Initialize with sample data. Replace with API call in production.
-        /// </summary>
         protected override void OnInitialized()
         {
-            // Subscribe to title changes so the header updates dynamically
             PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
 
+            // Seed with representative data that uses the real Booking model.
+            // Replace with: _allBookings = await JobService.GetAllAsync();
             _allBookings = new List<Booking>
             {
-                new Booking { Id = 1001, CustomerName = "John Doe",    Date = DateTime.Today,     Time = "10:00 AM", Status = BookingStatus.Confirmed },
-                new Booking { Id = 1002, CustomerName = "John Doe",  Date = DateTime.Today,     Time = "11:30 AM", Status = BookingStatus.Pending   },
-                new Booking { Id = 1003, CustomerName = "John Doe",Date = DateTime.Today.AddDays(1), Time = "01:00 PM", Status = BookingStatus.Cancelled }
+                new Booking
+                {
+                    Id            = 1001,
+                    CustomerName  = "John Doe",
+                    PhoneNumber   = "0812345678",
+                    AppointmentAt = DateTime.Today.AddHours(10),
+                    Status        = JobStatus.Waiting,
+                    Type          = JobType.PreBooked
+                },
+                new Booking
+                {
+                    Id            = 1002,
+                    CustomerName  = "Jane Smith",
+                    PhoneNumber   = "0823456789",
+                    AppointmentAt = DateTime.Today.AddHours(11).AddMinutes(30),
+                    Status        = JobStatus.InProgress,
+                    Type          = JobType.WalkIn
+                },
+                new Booking
+                {
+                    Id            = 1003,
+                    CustomerName  = "Mark Lee",
+                    PhoneNumber   = "0834567890",
+                    AppointmentAt = DateTime.Today.AddDays(1).AddHours(13),
+                    Status        = JobStatus.Cancelled,
+                    Type          = JobType.PreBooked
+                }
             };
         }
 
@@ -63,17 +81,15 @@ namespace ReWashPlus_DemoApp.Pages
 
         #region UI Helpers
 
-        /// <summary>
-        /// Tailwind badge classes based on booking status.
-        /// Use the theme's status-badge utilities defined in tailwind.config.js
-        /// </summary>
-        protected string GetStatusBadgeClass(BookingStatus status) =>
+        /// <summary>Returns Tailwind badge CSS class for the given JobStatus.</summary>
+        protected string GetStatusBadgeClass(JobStatus status) =>
             status switch
             {
-                BookingStatus.Confirmed => "status-completed",
-                BookingStatus.Pending => "status-waiting",
-                BookingStatus.Cancelled => "status-cancelled",
-                _ => "status-waiting"
+                JobStatus.Waiting    => "status-waiting",
+                JobStatus.InProgress => "status-inprogress",
+                JobStatus.Completed  => "status-completed",
+                JobStatus.Cancelled  => "status-cancelled",
+                _                    => "status-waiting"
             };
 
         #endregion
@@ -81,52 +97,20 @@ namespace ReWashPlus_DemoApp.Pages
         #region Actions
 
         protected void ViewBooking(int id)
-        {
-            // Navigate to a details page when you create it, e.g. /bookings/{id}
-            // For now, just navigate to a placeholder
-            Nav.NavigateTo($"/bookings/{id}", forceLoad: false);
-        }
+            => Nav.NavigateTo($"/bookings/{id}", forceLoad: false);
 
         protected void EditBooking(int id)
-        {
-            // Navigate to edit page when available
-            Nav.NavigateTo($"/bookings/{id}/edit", forceLoad: false);
-        }
+            => Nav.NavigateTo($"/bookings/{id}/edit", forceLoad: false);
 
-        protected void CancelBooking(int id)
+        protected async void CancelBooking(int id)
         {
+            await JobService.CancelJobAsync(id, "Cancelled by user");
             var booking = _allBookings.FirstOrDefault(b => b.Id == id);
-            if (booking is null) return;
-
-            booking.Status = BookingStatus.Cancelled;
-            StateHasChanged();
-        }
-
-        #endregion
-
-        #region Model
-
-        /// <summary>
-        /// Booking status enumeration for type-safety.
-        /// </summary>
-        public enum BookingStatus
-        {
-            Unknown = 0,
-            Pending = 1,
-            Confirmed = 2,
-            Cancelled = 3
-        }
-
-        /// <summary>
-        /// A single booking entry.
-        /// </summary>
-        public sealed class Booking
-        {
-            public int Id { get; set; }
-            public string CustomerName { get; set; } = string.Empty;
-            public DateTime Date { get; set; }
-            public string Time { get; set; } = string.Empty;
-            public BookingStatus Status { get; set; } = BookingStatus.Unknown;
+            if (booking is not null)
+            {
+                booking.Status = JobStatus.Cancelled;
+                StateHasChanged();
+            }
         }
 
         #endregion

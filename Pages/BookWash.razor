@@ -1,10 +1,10 @@
 ﻿@page "/book"
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
-@inject ReWashPlus_DemoApp.Services.BookingService BookingService
+@inject ReWashPlus_DemoApp.Services.JobService JobService
 @inject IJSRuntime JS
 
-<div class="min-h-screen bg-clickup-dark text-clickup-text px-4 py-8">
+<div class="px-4 py-6">
 
     <!-- Page Header -->
     <h1 class="text-4xl font-bold text-clickup-accent mb-6 text-center">Book a Wash — Rewash+</h1>
@@ -112,23 +112,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        isOnline = await JS.InvokeAsync<bool>("navigator.onLine");
+        isOnline = await JS.InvokeAsync<bool>("rewashConnectivity.isOnline");
     }
 
     private async Task HandleValidSubmit()
     {
-        await BookingService.SaveBookingAsync(bookingModel);
-        message = "Booking saved locally. It will sync when you're online.";
+        await JobService.CreateAsync(bookingModel);
+        message = "Booking saved locally. It will sync when you\'re online.";
 
         // Add to recent bookings immediately
         recentBookings.Insert(0, new Booking
         {
-            Id = bookingModel.Id,
-            CustomerName = bookingModel.CustomerName,
-            ServiceType = bookingModel.ServiceType,
+            Id            = bookingModel.Id,
+            CustomerName  = bookingModel.CustomerName,
+            ServiceType   = bookingModel.ServiceType,
             AppointmentAt = bookingModel.AppointmentAt,
-            PhoneNumber = bookingModel.PhoneNumber,
-            Status = JobStatus.Waiting
+            PhoneNumber   = bookingModel.PhoneNumber,
+            Status        = JobStatus.Waiting
         });
 
         bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) }; // reset form

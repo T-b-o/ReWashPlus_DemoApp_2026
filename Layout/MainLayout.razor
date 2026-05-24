@@ -1,28 +1,30 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject NavigationManager Nav
 
-<div class="flex h-screen bg-clickup-dark text-clickup-text">
+<div class="flex h-screen bg-clickup-dark text-clickup-text overflow-hidden">
 
     <!-- Sidebar -->
     <NavMenu />
 
     <!-- Main Content Area -->
-    <div class="bg-clickup-main flex-1 flex flex-col overflow-hidden">
+    <div class="flex-1 flex flex-col overflow-hidden">
 
         <!-- Sticky Header -->
-        <header class="sticky top-0 z-50 bg-clickup-light rounded-b-2xl flex justify-between items-center px-6 py-4 shadow-clickup">
-            <h1 class="text-2xl font-bold text-clickup-accent">@PageTitle</h1>
+        <header class="sticky top-0 z-10 border-b border-clickup-border flex justify-between items-center px-6 py-4">
+            <h1 class="text-xl font-semibold text-clickup-text">@PageTitle</h1>
 
             <div class="flex items-center gap-4">
-                <span class="text-clickup-muted">Hello, @UserName</span>
+                <span class="text-clickup-muted text-sm">Hello, @UserName</span>
                 <a href="/profile" class="hover:text-clickup-accent transition">
-                    <i class="fas fa-user-circle text-2xl"></i>
+                    <i class="fas fa-user-circle text-2xl text-clickup-muted"></i>
                 </a>
             </div>
         </header>
 
         <!-- Main Page Content -->
-        <main class="flex-1 overflow-y-auto p-6 m-6 bg-clickup-light rounded-3xl shadow-clickup">
+        <main class="flex-1 overflow-y-auto p-6">
             @Body
         </main>
     </div>
@@ -34,7 +36,42 @@
 
     protected override void OnInitialized()
     {
-        // Subscribe to title changes so the header updates dynamically
-         PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+        Nav.LocationChanged += OnLocationChanged;
+        UpdateTitle(Nav.Uri);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateTitle(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateTitle(string url)
+    {
+        var path = new Uri(url).AbsolutePath.ToLowerInvariant().TrimEnd('/');
+        var title = path switch
+        {
+            "" or "/" => "Home",
+            "/book"                    => "Book a Wash",
+            "/bookings"
+            or "/my-bookings"          => "Bookings",
+            "/payments"                => "Payments",
+            "/notifications"           => "Notifications",
+            "/profile"                 => "Profile",
+            "/admin/dashboard"         => "Admin Dashboard",
+            "/admin/manage-bookings"   => "Manage Bookings",
+            "/admin/manage-payments"   => "Manage Payments",
+            "/admin/users"             => "Users",
+            "/admin/reports"           => "Reports",
+            "/admin/settings"          => "Settings",
+            _                          => "ReWash+"
+        };
+        PageTitleService.SetTitle(title);
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }

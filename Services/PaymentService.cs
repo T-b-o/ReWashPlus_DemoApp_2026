@@ -10,21 +10,27 @@ namespace ReWashPlus_DemoApp.Services
 {
     /// <summary>
     /// Service for managing payments in offline-first mode.
+    /// All operations are scoped to the current tenant and branch.
     /// </summary>
     public class PaymentService
     {
         private const string PendingPaymentsKey = "rw_pending_payments";
-        private const string SyncedPaymentsKey = "rw_synced_payments";
-        
+        private const string SyncedPaymentsKey  = "rw_synced_payments";
+
         private readonly ILocalStorageService _localStorage;
-        private readonly HttpClient _http;
+        private readonly HttpClient           _http;
+        private readonly TenantContextService _tenantContext;
         private List<Payment>? _pendingPayments;
         private List<Payment>? _syncedPayments;
 
-        public PaymentService(ILocalStorageService localStorage, HttpClient http)
+        public PaymentService(
+            ILocalStorageService localStorage,
+            HttpClient           http,
+            TenantContextService tenantContext)
         {
-            _localStorage = localStorage;
-            _http = http;
+            _localStorage  = localStorage;
+            _http          = http;
+            _tenantContext = tenantContext;
         }
 
         /// <summary>
@@ -93,11 +99,15 @@ namespace ReWashPlus_DemoApp.Services
 
             var payment = new Payment
             {
-                Id = GetNextId(),
-                JobId = jobId,
-                Amount = amount,
-                Method = method,
-                Status = PaymentStatus.Completed,
+                Id          = GetNextId(),
+                PaymentId   = Guid.NewGuid(),
+                JobId       = jobId,
+                TenantId    = _tenantContext.TenantId,
+                BranchId    = _tenantContext.BranchId,
+                Amount      = amount,
+                Method      = method,
+                Status      = PaymentStatus.Completed,
+                SyncState   = SyncStatus.Pending,
                 Reference = reference ?? "",
                 PaidAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
@@ -179,15 +189,21 @@ namespace ReWashPlus_DemoApp.Services
             {
                 try
                 {
-                    // TODO: Replace with your real API endpoint
-                    var response = await _http.PostAsJsonAsync("api/payments", payment);
+                    var response = await _http.PostAsJsonAsync("api/v1/payments", payment);
 
                     if (response.IsSuccessStatusCode)
                     {
+                        payment.SyncState = SyncStatus.Synced;
                         _syncedPayments?.Add(payment);
+                    }
+                    else if ((int)response.StatusCode == 409)
+                    {
+                        payment.SyncState = SyncStatus.Conflict;
+                        stillPending.Add(payment);
                     }
                     else
                     {
+                        payment.SyncState = SyncStatus.Failed;
                         stillPending.Add(payment);
                     }
                 }

@@ -11,23 +11,29 @@ namespace ReWashPlus_DemoApp.Services
     /// <summary>
     /// Service for managing jobs (bookings/wash orders) in offline-first mode.
     /// Handles creation, status updates, and syncing with backend.
+    /// All new bookings are automatically scoped to the current tenant/branch.
     /// </summary>
     public class JobService
     {
-        private const string PendingJobsKey = "rw_pending_jobs";
-        private const string SyncedJobsKey = "rw_synced_jobs";
+        private const string PendingJobsKey   = "rw_pending_jobs";
+        private const string SyncedJobsKey    = "rw_synced_jobs";
         private const string NextJobNumberKey = "rw_next_job_number";
-        
+
         private readonly ILocalStorageService _localStorage;
-        private readonly HttpClient _http;
+        private readonly HttpClient           _http;
+        private readonly TenantContextService _tenantContext;
         private List<Booking>? _pendingJobs;
         private List<Booking>? _syncedJobs;
         private int _nextJobNumber = 1;
 
-        public JobService(ILocalStorageService localStorage, HttpClient http)
+        public JobService(
+            ILocalStorageService localStorage,
+            HttpClient           http,
+            TenantContextService tenantContext)
         {
-            _localStorage = localStorage;
-            _http = http;
+            _localStorage  = localStorage;
+            _http          = http;
+            _tenantContext = tenantContext;
         }
 
         /// <summary>
@@ -124,17 +130,20 @@ namespace ReWashPlus_DemoApp.Services
         }
 
         /// <summary>
-        /// Create a new job
+        /// Create a new job. Automatically stamps TenantId and BranchId from context.
         /// </summary>
         public async Task<Booking> CreateAsync(Booking job)
         {
             await EnsureInitializedAsync();
 
-            job.Id = GetNextId();
+            _tenantContext.ApplyContext(job);
+
+            job.Id        = GetNextId();
+            job.BookingId = Guid.NewGuid();
             job.JobNumber = GenerateJobNumber();
+            job.SyncState = SyncStatus.Pending;
             job.CreatedAt = DateTime.UtcNow;
             job.UpdatedAt = DateTime.UtcNow;
-            job.IsSynced = false;
 
             if (job.Type == JobType.WalkIn)
             {
@@ -158,13 +167,15 @@ namespace ReWashPlus_DemoApp.Services
             if (existing == null)
                 return null;
 
-            existing.Status = job.Status;
-            existing.StartedAt = job.StartedAt;
-            existing.CompletedAt = job.CompletedAt;
-            existing.AssignedStaffId = job.AssignedStaffId;
-            existing.Notes = job.Notes;
-            existing.TotalAmount = job.TotalAmount;
-            existing.UpdatedAt = DateTime.UtcNow;
+            existing.Status                = job.Status;
+            existing.StartedAt             = job.StartedAt;
+            existing.CompletedAt           = job.CompletedAt;
+            existing.AssignedStaffId       = job.AssignedStaffId;
+            existing.AssignedStaffProfileId = job.AssignedStaffProfileId;
+            existing.Notes                 = job.Notes;
+            existing.TotalAmount           = job.TotalAmount;
+            existing.SyncState             = SyncStatus.Pending;
+            existing.UpdatedAt             = DateTime.UtcNow;
 
             await PersistAsync();
             return existing;
@@ -260,7 +271,8 @@ namespace ReWashPlus_DemoApp.Services
         }
 
         /// <summary>
-        /// Attempt to sync pending jobs to backend
+        /// Attempt to sync pending jobs to the backend API.
+        /// Handles HTTP 409 Conflict (RowVersion mismatch) separately from other failures.
         /// </summary>
         public async Task SyncPendingAsync()
         {
@@ -275,22 +287,28 @@ namespace ReWashPlus_DemoApp.Services
             {
                 try
                 {
-                    // TODO: Replace with your real API endpoint
-                    var response = await _http.PostAsJsonAsync("api/jobs", job);
+                    var response = await _http.PostAsJsonAsync("api/v1/bookings", job);
 
                     if (response.IsSuccessStatusCode)
                     {
-                        job.IsSynced = true;
+                        job.SyncState = SyncStatus.Synced;
                         _syncedJobs?.Add(job);
+                    }
+                    else if ((int)response.StatusCode == 409)
+                    {
+                        // Conflict: server has a newer version — flag for manual resolution
+                        job.SyncState = SyncStatus.Conflict;
+                        stillPending.Add(job);
                     }
                     else
                     {
+                        job.SyncState = SyncStatus.Failed;
                         stillPending.Add(job);
                     }
                 }
                 catch (Exception)
                 {
-                    // Network error or other failure
+                    // Network error — keep pending for next retry
                     stillPending.Add(job);
                 }
             }
