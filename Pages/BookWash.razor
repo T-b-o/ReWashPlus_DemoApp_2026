@@ -104,7 +104,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
         await LoadBookingsAsync();
     }
 

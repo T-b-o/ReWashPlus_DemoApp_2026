@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.ConnectivityService Connectivity
+@inject ReWashPlus_DemoApp.Services.AuthService AuthService
 @inject NavigationManager Nav
 
 <div class="flex h-screen bg-clickup-dark text-clickup-text overflow-hidden">
@@ -17,14 +18,28 @@
             <h1 class="text-xl font-semibold text-clickup-text">@PageTitle</h1>
 
             <div class="flex items-center gap-4">
+                <!-- Online / Offline indicator -->
                 <span class="@(Connectivity.IsOnline ? "text-green-400" : "text-red-400") text-xs font-medium flex items-center gap-1">
                     <i class="fas @(Connectivity.IsOnline ? "fa-wifi" : "fa-exclamation-triangle")"></i>
                     @(Connectivity.IsOnline ? "Online" : "Offline")
                 </span>
-                <span class="text-clickup-muted text-sm">Hello, @UserName</span>
-                <a href="/profile" class="hover:text-clickup-accent transition">
+
+                <!-- User greeting -->
+                <span class="text-clickup-muted text-sm hidden sm:inline">
+                    Hello, <span class="text-clickup-accent font-medium">@DisplayName</span>
+                </span>
+
+                <!-- Profile icon -->
+                <a href="/profile" class="hover:text-clickup-accent transition" title="Profile">
                     <i class="fas fa-user-circle text-2xl text-clickup-muted"></i>
                 </a>
+
+                <!-- Logout -->
+                <button @onclick="HandleLogout"
+                        class="text-clickup-muted hover:text-red-400 transition"
+                        title="Sign out">
+                    <i class="fas fa-sign-out-alt text-xl"></i>
+                </button>
             </div>
         </header>
 
@@ -36,30 +51,66 @@
 </div>
 
 @code {
-    private string UserName = "Teboho";
-    private string PageTitle => PageTitleService.Title;
+    private string PageTitle  => PageTitleService.Title;
+    private string DisplayName => AuthService.CurrentUser?.FullName is { Length: > 0 } n ? n
+                                   : AuthService.CurrentUser?.Email ?? "Guest";
+
+    private static readonly HashSet<string> PublicPaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "", "/", "/login", "/register", "/register-tenant"
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-        Nav.LocationChanged += OnLocationChanged;
+        PageTitleService.TitleChanged    += OnTitleChanged;
+        Nav.LocationChanged              += OnLocationChanged;
+        AuthService.AuthStateChanged     += OnAuthStateChanged;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+
         UpdateTitle(Nav.Uri);
-        await Connectivity.InitializeAsync();
-        Connectivity.ConnectivityChanged += () => InvokeAsync(StateHasChanged);
+
+        try { await Connectivity.InitializeAsync(); } catch { /* non-fatal */ }
+        try { await AuthService.InitializeAsync();  } catch { /* non-fatal */ }
+    }
+
+    // Navigation guard runs after first render — the only safe place to call
+    // NavigateTo from a layout component.
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) GuardAuth(Nav.Uri);
+        return Task.CompletedTask;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         UpdateTitle(e.Location);
+        GuardAuth(e.Location);
         InvokeAsync(StateHasChanged);
+    }
+
+    private void OnAuthStateChanged()      => InvokeAsync(StateHasChanged);
+    private void OnConnectivityChanged()   => InvokeAsync(StateHasChanged);
+    private void OnTitleChanged()          => InvokeAsync(StateHasChanged);
+
+    private void GuardAuth(string url)
+    {
+        var path = new Uri(url).AbsolutePath.TrimEnd('/');
+        if (!AuthService.IsAuthenticated && !PublicPaths.Contains(path))
+            Nav.NavigateTo("/login", replace: true);
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login", replace: true);
     }
 
     private void UpdateTitle(string url)
     {
-        var path = new Uri(url).AbsolutePath.ToLowerInvariant().TrimEnd('/');
+        var path  = new Uri(url).AbsolutePath.ToLowerInvariant().TrimEnd('/');
         var title = path switch
         {
-            "" or "/" => "Home",
+            "" or "/"                  => "Home",
             "/book"                    => "Book a Wash",
             "/bookings"
             or "/my-bookings"          => "Bookings",
@@ -79,7 +130,9 @@
 
     public void Dispose()
     {
-        Nav.LocationChanged -= OnLocationChanged;
-        Connectivity.ConnectivityChanged -= () => InvokeAsync(StateHasChanged);
+        Nav.LocationChanged              -= OnLocationChanged;
+        AuthService.AuthStateChanged     -= OnAuthStateChanged;
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        PageTitleService.TitleChanged    -= OnTitleChanged;
     }
 }

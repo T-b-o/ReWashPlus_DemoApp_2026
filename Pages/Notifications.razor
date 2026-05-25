@@ -7,9 +7,3 @@
     <p class="text-sm text-clickup-muted">User notifications will appear here.</p>
 </div>
 
-@code {
-    protected override void OnInitialized()
-    {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-    }
-}

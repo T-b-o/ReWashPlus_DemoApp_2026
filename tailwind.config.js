@@ -73,7 +73,7 @@ module.exports = {
                 },
                 // Inputs
                 ".input": {
-                    "@apply w-full rounded-lg bg-clickup-surface border border-clickup-border p-3 text-clickup-text placeholder-clickup-muted focus:outline-none focus:ring-2 focus:ring-clickup-accent": {},
+                    "@apply block w-full rounded-lg bg-clickup-surface border border-clickup-border p-3 text-clickup-text placeholder-clickup-muted focus:outline-none focus:ring-2 focus:ring-clickup-accent": {},
                 },
                 // Badges / status chips
                 ".status-badge": {

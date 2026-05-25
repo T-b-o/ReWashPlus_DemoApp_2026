@@ -3,17 +3,49 @@
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.JobService JobService
 @inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
+@inject ReWashPlus_DemoApp.Services.AuthService AuthService
 
 <div class="p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 
     <!-- Hero / Welcome Card -->
     <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light rounded-2xl shadow-clickup p-8 text-center">
-        <h1 class="text-4xl lg:text-5xl font-bold text-clickup-accent mb-3">Welcome Back!</h1>
+        <h1 class="text-4xl lg:text-5xl font-bold text-clickup-accent mb-3">
+            @(AuthService.IsAuthenticated ? $"Welcome Back, {AuthService.CurrentUser?.FullName?.Split(' ')[0] ?? "there"}!" : "Welcome to ReWash+")
+        </h1>
         <p class="text-clickup-muted text-lg lg:text-xl max-w-2xl mx-auto">
             Manage your car washes, track bookings and payments — all in one place.
         </p>
+        @if (!AuthService.IsAuthenticated)
+        {
+            <div class="mt-6 flex flex-wrap justify-center gap-4">
+                <a href="/login"    class="btn-primary px-6 py-3 text-base"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</a>
+                <a href="/register" class="btn-secondary px-6 py-3 text-base"><i class="fas fa-user-plus mr-2"></i>Register</a>
+            </div>
+        }
     </div>
 
+    <!-- Google Map -->
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light rounded-2xl shadow-clickup overflow-hidden">
+        <div class="p-4 border-b border-clickup-border">
+            <h2 class="text-xl font-semibold text-clickup-accent"><i class="fas fa-map-marker-alt mr-2"></i>Find Us</h2>
+            <p class="text-clickup-muted text-sm mt-1">ReWash+ service locations near you</p>
+        </div>
+        <div class="w-full" style="height:320px;">
+            <iframe
+                title="ReWash+ Location Map"
+                src="https://maps.google.com/maps?q=Johannesburg,+South+Africa&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                width="100%"
+                height="320"
+                style="border:0;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
+    </div>
+
+    @if (AuthService.IsAuthenticated)
+    {
     <!-- Upcoming Bookings -->
     <div class="col-span-1 md:col-span-2 bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
         <h2 class="text-2xl font-bold text-clickup-accent mb-4">Scheduled Bookings</h2>
@@ -59,6 +91,7 @@
             </div>
         </div>
     </div>
+    }
 
     <!-- Quick Tips -->
     <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light border border-clickup-border rounded-xl p-6">
@@ -84,8 +117,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-
         var all = await JobService.GetAllAsync();
         var now = DateTime.Now;
 

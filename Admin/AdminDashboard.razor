@@ -97,8 +97,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-
         bookings = await JobService.GetAllAsync();
         var allPayments = await PaymentService.GetAllAsync();
 

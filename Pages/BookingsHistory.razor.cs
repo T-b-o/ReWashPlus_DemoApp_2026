@@ -41,7 +41,6 @@ namespace ReWashPlus_DemoApp.Pages
 
         protected override async Task OnInitializedAsync()
         {
-            PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
             _allBookings = await JobService.GetAllAsync();
         }
 

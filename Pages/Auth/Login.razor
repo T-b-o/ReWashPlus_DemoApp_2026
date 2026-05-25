@@ -1,0 +1,128 @@
+@page "/login"
+@layout AuthLayout
+@using System.ComponentModel.DataAnnotations
+@inject ReWashPlus_DemoApp.Services.AuthService AuthService
+@inject NavigationManager Nav
+
+<div class="bg-clickup-light rounded-2xl shadow-clickup p-8 space-y-6">
+
+    <div class="text-center">
+        <h2 class="text-2xl font-bold text-clickup-accent">Sign In</h2>
+        <p class="text-clickup-muted text-sm mt-1">Works offline — your data stays in your browser</p>
+    </div>
+
+    <EditForm Model="model" OnValidSubmit="HandleLogin" class="space-y-4">
+        <DataAnnotationsValidator />
+
+        <div class="relative">
+            <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.Email"
+                       placeholder="Email address"
+                       class="input pl-10"
+                       autocomplete="email" />
+            <ValidationMessage For="@(() => model.Email)" class="text-red-400 text-xs mt-1 block" />
+        </div>
+
+        <div class="relative">
+            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.Password"
+                       type="@(showPassword ? "text" : "password")"
+                       placeholder="Password"
+                       class="input pl-10 pr-10"
+                       autocomplete="current-password" />
+            <button type="button"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-clickup-muted hover:text-clickup-accent"
+                    @onclick="() => showPassword = !showPassword"
+                    tabindex="-1">
+                <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+            </button>
+            <ValidationMessage For="@(() => model.Password)" class="text-red-400 text-xs mt-1 block" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="bg-red-900/30 border border-red-500 text-red-300 rounded-lg p-3 text-sm">
+                <i class="fas fa-exclamation-circle mr-2"></i>@errorMessage
+            </div>
+        }
+
+        <button type="submit"
+                class="btn-primary w-full flex items-center justify-center gap-2"
+                disabled="@isLoading">
+            @if (isLoading)
+            {
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Signing in…</span>
+            }
+            else
+            {
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Sign In</span>
+            }
+        </button>
+    </EditForm>
+
+    <div class="relative">
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-clickup-border"></div>
+        </div>
+        <div class="relative flex justify-center text-xs text-clickup-muted">
+            <span class="bg-clickup-light px-3">or</span>
+        </div>
+    </div>
+
+    <div class="space-y-2 text-center text-sm text-clickup-muted">
+        <p>
+            New staff / customer?
+            <a href="/register" class="text-clickup-accent hover:underline ml-1">Create account</a>
+        </p>
+        <p>
+            Registering a new business?
+            <a href="/register-tenant" class="text-clickup-accent hover:underline ml-1">Register company</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private LoginModel model        = new();
+    private string     errorMessage = string.Empty;
+    private bool       isLoading    = false;
+    private bool       showPassword = false;
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsAuthenticated)
+            Nav.NavigateTo(RedirectUrl(), replace: true);
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoading    = true;
+        errorMessage = string.Empty;
+
+        var (ok, error) = await AuthService.LoginAsync(model.Email, model.Password);
+
+        if (ok)
+            Nav.NavigateTo(RedirectUrl(), replace: true);
+        else
+            errorMessage = error;
+
+        isLoading = false;
+    }
+
+    private string RedirectUrl()
+    {
+        var role = AuthService.CurrentUser?.Role ?? ReWashPlus_DemoApp.Models.UserRole.Customer;
+        return role >= ReWashPlus_DemoApp.Models.UserRole.Staff ? "/admin/dashboard" : "/";
+    }
+
+    private class LoginModel
+    {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

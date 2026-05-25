@@ -20,7 +20,8 @@ window.rewashConnectivity = (function () {
 
     function notify(isOnline) {
         if (_dotNetRef) {
-            _dotNetRef.invokeMethodAsync('OnConnectivityChanged', isOnline);
+            _dotNetRef.invokeMethodAsync('OnConnectivityChanged', isOnline)
+                      .catch(() => { /* component may have been disposed */ });
         }
     }
 
