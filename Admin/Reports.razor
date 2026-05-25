@@ -1,15 +1,108 @@
 @page "/admin/reports"
-@using ReWashPlus_DemoApp.Services
+@using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.JobService JobService
+@inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
 
-<div class="p-6">
-    <h1 class="text-2xl font-bold text-clickup-accent">Reports</h1>
-    <p class="text-sm text-clickup-muted">Admin reports and analytics.</p>
+<div class="p-6 space-y-6">
+
+    <header>
+        <h1 class="text-4xl font-bold text-clickup-accent">Reports</h1>
+        <p class="text-clickup-muted">Live summary from locally stored data.</p>
+    </header>
+
+    <!-- KPI cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl">
+            <p class="text-xs text-clickup-muted uppercase tracking-wide mb-2">Total Bookings</p>
+            <p class="text-3xl font-bold text-clickup-accent">@totalBookings</p>
+        </div>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl">
+            <p class="text-xs text-clickup-muted uppercase tracking-wide mb-2">Completed</p>
+            <p class="text-3xl font-bold text-green-400">@completedBookings</p>
+        </div>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl">
+            <p class="text-xs text-clickup-muted uppercase tracking-wide mb-2">Cancelled</p>
+            <p class="text-3xl font-bold text-red-400">@cancelledBookings</p>
+        </div>
+        <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl">
+            <p class="text-xs text-clickup-muted uppercase tracking-wide mb-2">Revenue Collected</p>
+            <p class="text-3xl font-bold text-clickup-accent">R @revenue.ToString("N2")</p>
+        </div>
+    </section>
+
+    <!-- Bookings by service type -->
+    <section class="bg-clickup-light border border-clickup-border rounded-xl p-6">
+        <h2 class="text-xl font-bold text-clickup-accent mb-4">Bookings by Service Type</h2>
+        @if (!byServiceType.Any())
+        {
+            <p class="text-clickup-muted text-sm">No data yet.</p>
+        }
+        else
+        {
+            <div class="space-y-3">
+                @foreach (var row in byServiceType)
+                {
+                    <div class="flex justify-between items-center bg-clickup-surface border border-clickup-border rounded-lg px-4 py-3">
+                        <span class="font-medium text-clickup-text">@row.ServiceType</span>
+                        <span class="text-clickup-accent font-bold">@row.Count bookings</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <!-- Pending sync -->
+    <section class="bg-clickup-light border border-clickup-border rounded-xl p-6">
+        <h2 class="text-xl font-bold text-clickup-accent mb-4">Sync Status</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div class="bg-clickup-surface rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-yellow-400">@pendingSyncCount</p>
+                <p class="text-xs text-clickup-muted mt-1">Pending Sync</p>
+            </div>
+            <div class="bg-clickup-surface rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-green-400">@syncedCount</p>
+                <p class="text-xs text-clickup-muted mt-1">Synced</p>
+            </div>
+            <div class="bg-clickup-surface rounded-lg p-4 text-center">
+                <p class="text-2xl font-bold text-red-400">@failedSyncCount</p>
+                <p class="text-xs text-clickup-muted mt-1">Failed / Conflict</p>
+            </div>
+        </div>
+    </section>
+
 </div>
 
 @code {
-    protected override void OnInitialized()
+    private int totalBookings;
+    private int completedBookings;
+    private int cancelledBookings;
+    private decimal revenue;
+    private int pendingSyncCount;
+    private int syncedCount;
+    private int failedSyncCount;
+
+    private record ServiceRow(string ServiceType, int Count);
+    private List<ServiceRow> byServiceType = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+        var bookings = await JobService.GetAllAsync();
+        var payments = await PaymentService.GetAllAsync();
+
+        totalBookings     = bookings.Count;
+        completedBookings = bookings.Count(b => b.Status == JobStatus.Completed);
+        cancelledBookings = bookings.Count(b => b.Status == JobStatus.Cancelled);
+        revenue           = payments.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount);
+
+        pendingSyncCount = bookings.Count(b => b.SyncState == SyncStatus.Pending);
+        syncedCount      = bookings.Count(b => b.SyncState == SyncStatus.Synced);
+        failedSyncCount  = bookings.Count(b => b.SyncState == SyncStatus.Failed || b.SyncState == SyncStatus.Conflict);
+
+        byServiceType = bookings
+            .GroupBy(b => string.IsNullOrWhiteSpace(b.ServiceType) ? "Unknown" : b.ServiceType)
+            .Select(g => new ServiceRow(g.Key, g.Count()))
+            .OrderByDescending(r => r.Count)
+            .ToList();
     }
 }

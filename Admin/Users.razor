@@ -7,9 +7,3 @@
     <p class="text-sm text-clickup-muted">Admin user management UI.</p>
 </div>
 
-@code {
-    protected override void OnInitialized()
-    {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-    }
-}

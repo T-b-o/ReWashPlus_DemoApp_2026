@@ -1,6 +1,8 @@
 ﻿@page "/admin/dashboard"
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.JobService JobService
+@inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
 
 <div class="p-6 space-y-6">
 
@@ -14,22 +16,22 @@
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
             <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Total Bookings</h2>
-            <p class="text-clickup-accent text-3xl font-bold">125</p>
+            <p class="text-clickup-accent text-3xl font-bold">@totalBookings</p>
         </div>
 
         <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
             <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Pending Payments</h2>
-            <p class="text-clickup-accent text-3xl font-bold">12</p>
+            <p class="text-clickup-accent text-3xl font-bold">@pendingPaymentsCount</p>
         </div>
 
         <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
-            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Registered Users</h2>
-            <p class="text-clickup-accent text-3xl font-bold">58</p>
+            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Active Jobs</h2>
+            <p class="text-clickup-accent text-3xl font-bold">@activeJobs</p>
         </div>
 
         <div class="bg-clickup-light border border-clickup-border p-6 rounded-xl hover:border-clickup-accent transition">
-            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Reports</h2>
-            <p class="text-clickup-accent text-3xl font-bold">8</p>
+            <h2 class="text-sm font-medium text-clickup-muted mb-2 uppercase tracking-wide">Completed Today</h2>
+            <p class="text-clickup-accent text-3xl font-bold">@completedToday</p>
         </div>
     </section>
 
@@ -54,14 +56,20 @@
         <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
             <h2 class="text-xl font-bold text-clickup-accent mb-4">Pending Payments</h2>
             <div class="space-y-2 overflow-auto max-h-64">
-                <div class="bg-clickup-surface border border-clickup-border rounded-lg p-3 flex justify-between items-center hover:border-clickup-accent transition">
-                    <span>Booking #101 — Sarah K.</span>
-                    <span class="text-clickup-yellow font-bold">R 200</span>
-                </div>
-                <div class="bg-clickup-surface border border-clickup-border rounded-lg p-3 flex justify-between items-center hover:border-clickup-accent transition">
-                    <span>Booking #105 — Tom P.</span>
-                    <span class="text-clickup-yellow font-bold">R 350</span>
-                </div>
+                @if (!pendingPayments.Any())
+                {
+                    <p class="text-sm text-clickup-muted">No pending payments.</p>
+                }
+                else
+                {
+                    @foreach (var payment in pendingPayments)
+                    {
+                        <div class="bg-clickup-surface border border-clickup-border rounded-lg p-3 flex justify-between items-center hover:border-clickup-accent transition">
+                            <span>Booking #@payment.JobId</span>
+                            <span class="text-clickup-yellow font-bold">R @payment.Amount.ToString("N2")</span>
+                        </div>
+                    }
+                }
             </div>
         </div>
 
@@ -80,28 +88,38 @@
 
 @code {
 
-    protected override void OnInitialized()
+    private List<Booking> bookings = new();
+    private List<Payment> pendingPayments = new();
+    private int totalBookings;
+    private int pendingPaymentsCount;
+    private int activeJobs;
+    private int completedToday;
+
+    protected override async Task OnInitializedAsync()
     {
-        // Subscribe to title changes so the header updates dynamically
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+        bookings = await JobService.GetAllAsync();
+        var allPayments = await PaymentService.GetAllAsync();
+
+        pendingPayments = allPayments
+            .Where(p => p.Status == PaymentStatus.Pending)
+            .ToList();
+
+        totalBookings        = bookings.Count;
+        pendingPaymentsCount = pendingPayments.Count;
+        activeJobs           = bookings.Count(b => b.IsActive);
+        completedToday       = bookings.Count(b =>
+            b.Status == JobStatus.Completed &&
+            b.CompletedAt.HasValue &&
+            b.CompletedAt.Value.Date == DateTime.Today);
     }
 
-    private List<Booking> bookings = new List<Booking>
-    {
-        new Booking { Id = 101, CustomerName = "John Doe", Status = JobStatus.Waiting },
-        new Booking { Id = 102, CustomerName = "Jane Smith", Status = JobStatus.InProgress },
-        new Booking { Id = 103, CustomerName = "Mark Lee", Status = JobStatus.Cancelled }
-    };
-
-    private string GetStatusColor(JobStatus status)
-    {
-        return status switch
+    private string GetStatusColor(JobStatus status) =>
+        status switch
         {
-            JobStatus.Waiting => "text-yellow-400",
+            JobStatus.Waiting    => "text-yellow-400",
             JobStatus.InProgress => "text-green-400",
-            JobStatus.Completed => "text-blue-400",
-            JobStatus.Cancelled => "text-red-500",
-            _ => "text-clickup-text"
+            JobStatus.Completed  => "text-blue-400",
+            JobStatus.Cancelled  => "text-red-500",
+            _                    => "text-clickup-text"
         };
-    }
 }

@@ -1,0 +1,175 @@
+@page "/register"
+@layout AuthLayout
+@using System.ComponentModel.DataAnnotations
+@inject ReWashPlus_DemoApp.Services.AuthService AuthService
+@inject NavigationManager Nav
+
+<div class="bg-clickup-light rounded-2xl shadow-clickup p-8 space-y-6">
+
+    <div class="text-center">
+        <h2 class="text-2xl font-bold text-clickup-accent">Create Account</h2>
+        <p class="text-clickup-muted text-sm mt-1">Register as staff or customer</p>
+    </div>
+
+    <EditForm Model="model" OnValidSubmit="HandleSubmit" class="space-y-4">
+        <DataAnnotationsValidator />
+
+        <div class="grid grid-cols-2 gap-3">
+            <div class="relative">
+                <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+                <InputText @bind-Value="model.FirstName" placeholder="First Name" class="input pl-10" />
+                <ValidationMessage For="@(() => model.FirstName)" class="text-red-400 text-xs mt-1 block" />
+            </div>
+            <div>
+                <InputText @bind-Value="model.LastName" placeholder="Last Name" class="input" />
+                <ValidationMessage For="@(() => model.LastName)" class="text-red-400 text-xs mt-1 block" />
+            </div>
+        </div>
+
+        <div class="relative">
+            <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.Email" placeholder="Email address" class="input pl-10" />
+            <ValidationMessage For="@(() => model.Email)" class="text-red-400 text-xs mt-1 block" />
+        </div>
+
+        <div class="relative">
+            <i class="fas fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.PhoneNumber" placeholder="Phone Number" class="input pl-10" />
+        </div>
+
+        <div class="relative">
+            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.Password" type="password" placeholder="Password (min 6 characters)" class="input pl-10" />
+            <ValidationMessage For="@(() => model.Password)" class="text-red-400 text-xs mt-1 block" />
+        </div>
+
+        <div class="relative">
+            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.ConfirmPassword" type="password" placeholder="Confirm Password" class="input pl-10" />
+            <ValidationMessage For="@(() => model.ConfirmPassword)" class="text-red-400 text-xs mt-1 block" />
+        </div>
+
+        <!-- Role -->
+        <div class="relative">
+            <i class="fas fa-id-badge absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputSelect @bind-Value="model.Role" class="input pl-10">
+                <option value="@ReWashPlus_DemoApp.Models.UserRole.Customer">Customer</option>
+                <option value="@ReWashPlus_DemoApp.Models.UserRole.Staff">Staff</option>
+                <option value="@ReWashPlus_DemoApp.Models.UserRole.BranchManager">Branch Manager</option>
+            </InputSelect>
+        </div>
+
+        <!-- Optional company code -->
+        <div class="relative">
+            <i class="fas fa-key absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
+            <InputText @bind-Value="model.CompanySlug"
+                       placeholder="Company Code (optional — ask your manager)"
+                       class="input pl-10" />
+        </div>
+        <p class="text-xs text-clickup-muted -mt-2">
+            Leave blank if you are a walk-in customer with no company.
+        </p>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="bg-red-900/30 border border-red-500 text-red-300 rounded-lg p-3 text-sm">
+                <i class="fas fa-exclamation-circle mr-2"></i>@errorMessage
+            </div>
+        }
+
+        @if (success)
+        {
+            <div class="bg-green-900/30 border border-green-500 text-green-300 rounded-lg p-3 text-sm">
+                <i class="fas fa-check-circle mr-2"></i>Account created! Redirecting to sign in…
+            </div>
+        }
+
+        <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Creating account…</span>
+            }
+            else
+            {
+                <i class="fas fa-user-plus"></i>
+                <span>Create Account</span>
+            }
+        </button>
+    </EditForm>
+
+    <div class="text-center text-sm text-clickup-muted space-y-1">
+        <p>Already have an account? <a href="/login" class="text-clickup-accent hover:underline">Sign in</a></p>
+        <p>Registering a new business? <a href="/register-tenant" class="text-clickup-accent hover:underline">Register company</a></p>
+    </div>
+</div>
+
+@code {
+    private UserRegModel model = new();
+    private string errorMessage = string.Empty;
+    private bool   isLoading    = false;
+    private bool   success      = false;
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsAuthenticated)
+            Nav.NavigateTo("/", replace: true);
+    }
+
+    private async Task HandleSubmit()
+    {
+        isLoading    = true;
+        errorMessage = string.Empty;
+
+        var (ok, error) = await AuthService.RegisterUserAsync(
+            model.FirstName,
+            model.LastName,
+            model.Email,
+            model.PhoneNumber,
+            model.Password,
+            model.Role,
+            model.CompanySlug);
+
+        if (ok)
+        {
+            success = true;
+            StateHasChanged();
+            await Task.Delay(1200);
+            Nav.NavigateTo("/login", replace: true);
+        }
+        else
+        {
+            errorMessage = error;
+        }
+
+        isLoading = false;
+    }
+
+    private class UserRegModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last name is required")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        public string Email { get; set; } = string.Empty;
+
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Please confirm your password")]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        public ReWashPlus_DemoApp.Models.UserRole Role { get; set; } =
+            ReWashPlus_DemoApp.Models.UserRole.Customer;
+
+        public string CompanySlug { get; set; } = string.Empty;
+    }
+}

@@ -1,6 +1,7 @@
 ﻿@page "/admin/manage-bookings"
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.JobService JobService
 
 <div class="p-6 space-y-6">
 
@@ -81,53 +82,45 @@
 
 @code {
 
-    protected override void OnInitialized()
+    private List<Booking> bookings    = new();
+    private List<Booking> oldBookings = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        // Subscribe to title changes so the header updates dynamically
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+        await LoadDataAsync();
     }
 
-    // Current bookings
-    private List<Booking> bookings = new List<Booking>
+    private async Task LoadDataAsync()
     {
-        new Booking { Id = 101, CustomerName="John Doe", ServiceType="Wash", AppointmentAt=DateTime.Today.AddDays(1), PhoneNumber="0812345678", Email="john@example.com", Status=JobStatus.Waiting },
-        new Booking { Id = 102, CustomerName="Jane Smith", ServiceType="Interior", AppointmentAt=DateTime.Today.AddDays(2), PhoneNumber="0823456789", Email="jane@example.com", Status=JobStatus.InProgress },
-        new Booking { Id = 103, CustomerName="Mark Lee", ServiceType="Full Valet", AppointmentAt=DateTime.Today.AddDays(3), PhoneNumber="0834567890", Email="mark@example.com", Status=JobStatus.Cancelled }
-    };
-
-    // Old bookings
-    private List<Booking> oldBookings = new List<Booking>
-    {
-        new Booking { Id = 90, CustomerName="Alice Brown", ServiceType="Wash", AppointmentAt=DateTime.Today.AddDays(-10), Status=JobStatus.Completed },
-        new Booking { Id = 91, CustomerName="Bob Green", ServiceType="Interior", AppointmentAt=DateTime.Today.AddDays(-8), Status=JobStatus.Completed },
-        new Booking { Id = 92, CustomerName="Charlie White", ServiceType="Full Valet", AppointmentAt=DateTime.Today.AddDays(-6), Status=JobStatus.Cancelled },
-        new Booking { Id = 93, CustomerName="Dana Blue", ServiceType="Wash", AppointmentAt=DateTime.Today.AddDays(-5), Status=JobStatus.Completed },
-    };
-
-    private void ApproveBooking(Booking booking)
-    {
-        booking.Status = JobStatus.InProgress;
+        var all = await JobService.GetAllAsync();
+        bookings    = all.Where(b => b.IsActive).OrderBy(b => b.AppointmentAt).ToList();
+        oldBookings = all.Where(b => !b.IsActive).OrderByDescending(b => b.AppointmentAt).ToList();
     }
 
-    private void RejectBooking(Booking booking)
+    private async Task ApproveBooking(Booking booking)
     {
-        booking.Status = JobStatus.Cancelled;
+        await JobService.StartJobAsync(booking.Id);
+        await LoadDataAsync();
+    }
+
+    private async Task RejectBooking(Booking booking)
+    {
+        await JobService.CancelJobAsync(booking.Id, "Rejected by admin");
+        await LoadDataAsync();
     }
 
     private void ViewDetails(Booking booking)
     {
-        // Implement modal or navigate to details page
+        // Navigate to details when that page is ready
     }
 
-    private string GetStatusColor(JobStatus status)
-    {
-        return status switch
+    private string GetStatusColor(JobStatus status) =>
+        status switch
         {
-            JobStatus.Waiting => "status-waiting",
+            JobStatus.Waiting    => "status-waiting",
             JobStatus.InProgress => "status-inprogress",
-            JobStatus.Cancelled => "status-cancelled",
-            JobStatus.Completed => "status-completed",
-            _ => "text-clickup-text"
+            JobStatus.Cancelled  => "status-cancelled",
+            JobStatus.Completed  => "status-completed",
+            _                    => "text-clickup-text"
         };
-    }
 }

@@ -2,7 +2,7 @@
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.JobService JobService
-@inject IJSRuntime JS
+@inject ReWashPlus_DemoApp.Services.ConnectivityService Connectivity
 
 <div class="px-4 py-6">
 
@@ -13,7 +13,7 @@
     <div class="mb-6 text-center">
         <p>
             Network:
-            <strong class="@(isOnline ? "text-clickup-accent" : "text-clickup-red")">@(isOnline ? "Online" : "Offline")</strong>
+            <strong class="@(Connectivity.IsOnline ? "text-clickup-accent" : "text-clickup-red")">@(Connectivity.IsOnline ? "Online" : "Offline")</strong>
         </p>
     </div>
 
@@ -99,57 +99,39 @@
 
 @code {
     private Booking bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) };
-    private bool isOnline = false;
     private string? message;
-
-    // Mock recent bookings
-    private List<Booking> recentBookings = new List<Booking>
-    {
-        new Booking { Id = 101, CustomerName="John Doe", ServiceType="Wash", AppointmentAt=DateTime.Today, PhoneNumber="0812345678", Status=JobStatus.InProgress },
-        new Booking { Id = 102, CustomerName="John Doe", ServiceType="Interior", AppointmentAt=DateTime.Today.AddDays(1), PhoneNumber="0823456789", Status=JobStatus.Waiting },
-        new Booking { Id = 103, CustomerName="John Doe", ServiceType="Full Valet", AppointmentAt=DateTime.Today.AddDays(2), PhoneNumber="0834567890", Status=JobStatus.InProgress }
-    };
+    private List<Booking> recentBookings = new();
 
     protected override async Task OnInitializedAsync()
     {
-        isOnline = await JS.InvokeAsync<bool>("rewashConnectivity.isOnline");
+        await LoadBookingsAsync();
+    }
+
+    private async Task LoadBookingsAsync()
+    {
+        var all = await JobService.GetAllAsync();
+        recentBookings = all.Take(10).ToList();
     }
 
     private async Task HandleValidSubmit()
     {
         await JobService.CreateAsync(bookingModel);
-        message = "Booking saved locally. It will sync when you\'re online.";
+        message = Connectivity.IsOnline
+            ? "Booking saved."
+            : "Booking saved offline. It will sync when you are online.";
 
-        // Add to recent bookings immediately
-        recentBookings.Insert(0, new Booking
-        {
-            Id            = bookingModel.Id,
-            CustomerName  = bookingModel.CustomerName,
-            ServiceType   = bookingModel.ServiceType,
-            AppointmentAt = bookingModel.AppointmentAt,
-            PhoneNumber   = bookingModel.PhoneNumber,
-            Status        = JobStatus.Waiting
-        });
-
-        bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) }; // reset form
+        bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) };
+        await LoadBookingsAsync();
         StateHasChanged();
     }
 
-    private string GetStatusColor(JobStatus status)
-    {
-        return status switch
+    private string GetStatusColor(JobStatus status) =>
+        status switch
         {
-            JobStatus.Waiting => "status-waiting",
+            JobStatus.Waiting    => "status-waiting",
             JobStatus.InProgress => "status-inprogress",
-            JobStatus.Cancelled => "status-cancelled",
-            JobStatus.Completed => "status-completed",
-            _ => ""
+            JobStatus.Cancelled  => "status-cancelled",
+            JobStatus.Completed  => "status-completed",
+            _                    => ""
         };
-    }
-
-    protected override void OnInitialized()
-    {
-        // Subscribe to title changes so the header updates dynamically
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-    }
 }
