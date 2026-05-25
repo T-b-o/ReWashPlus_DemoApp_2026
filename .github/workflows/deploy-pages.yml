@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - First_UpgradeToSaaS_ReadyApplication
+      - master
 
 # Required permissions for Pages deployment
 permissions:
