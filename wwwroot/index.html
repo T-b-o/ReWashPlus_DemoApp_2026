@@ -18,6 +18,24 @@
     <!--Font Awesome-->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SPA routing restore: reads the path encoded by 404.html and restores it
+         via history.replaceState before Blazor boots, so the router lands correctly. -->
+    <script>
+        (function (l) {
+            if (l.search[1] === '/') {
+                var decoded = l.search.slice(1).split('&').map(function (s) {
+                    return s.replace(/~and~/g, '&');
+                });
+                window.history.replaceState(
+                    null, null,
+                    l.pathname.slice(0, -1) + decoded[0] +
+                    (decoded[1] ? '?' + decoded[1] : '') +
+                    l.hash
+                );
+            }
+        }(window.location));
+    </script>
 </head>
 
 <body>
