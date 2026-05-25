@@ -36,10 +36,11 @@ jobs:
         run: dotnet publish ReWashPlus_DemoApp.csproj -c Release -o release --nologo
 
       # GitHub Pages serves the app under /ReWashPlus_DemoApp_2026/
-      # so the Blazor base href must match that path.
-      - name: Fix base href for GitHub Pages
+      # so the Blazor base href and service worker base must match that path.
+      - name: Fix base href and service worker for GitHub Pages
         run: |
           sed -i 's|<base href="/" />|<base href="/ReWashPlus_DemoApp_2026/" />|g' release/wwwroot/index.html
+          sed -i 's|const base = "/ReWashPlus_DemoApp_2026/";|const base = "/ReWashPlus_DemoApp_2026/";|g' release/wwwroot/service-worker.published.js
 
       # Blazor WASM handles its own client-side routing, so copying index.html
       # to 404.html lets GitHub Pages serve the app for any deep-link URL.
