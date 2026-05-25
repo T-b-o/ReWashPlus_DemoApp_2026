@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.ConnectivityService Connectivity
 @inject NavigationManager Nav
 
 <div class="flex h-screen bg-clickup-dark text-clickup-text overflow-hidden">
@@ -16,6 +17,10 @@
             <h1 class="text-xl font-semibold text-clickup-text">@PageTitle</h1>
 
             <div class="flex items-center gap-4">
+                <span class="@(Connectivity.IsOnline ? "text-green-400" : "text-red-400") text-xs font-medium flex items-center gap-1">
+                    <i class="fas @(Connectivity.IsOnline ? "fa-wifi" : "fa-exclamation-triangle")"></i>
+                    @(Connectivity.IsOnline ? "Online" : "Offline")
+                </span>
                 <span class="text-clickup-muted text-sm">Hello, @UserName</span>
                 <a href="/profile" class="hover:text-clickup-accent transition">
                     <i class="fas fa-user-circle text-2xl text-clickup-muted"></i>
@@ -34,11 +39,13 @@
     private string UserName = "Teboho";
     private string PageTitle => PageTitleService.Title;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
         Nav.LocationChanged += OnLocationChanged;
         UpdateTitle(Nav.Uri);
+        await Connectivity.InitializeAsync();
+        Connectivity.ConnectivityChanged += () => InvokeAsync(StateHasChanged);
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -73,5 +80,6 @@
     public void Dispose()
     {
         Nav.LocationChanged -= OnLocationChanged;
+        Connectivity.ConnectivityChanged -= () => InvokeAsync(StateHasChanged);
     }
 }

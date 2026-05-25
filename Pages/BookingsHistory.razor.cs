@@ -39,42 +39,10 @@ namespace ReWashPlus_DemoApp.Pages
 
         #region Lifecycle
 
-        protected override void OnInitialized()
+        protected override async Task OnInitializedAsync()
         {
             PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
-
-            // Seed with representative data that uses the real Booking model.
-            // Replace with: _allBookings = await JobService.GetAllAsync();
-            _allBookings = new List<Booking>
-            {
-                new Booking
-                {
-                    Id            = 1001,
-                    CustomerName  = "John Doe",
-                    PhoneNumber   = "0812345678",
-                    AppointmentAt = DateTime.Today.AddHours(10),
-                    Status        = JobStatus.Waiting,
-                    Type          = JobType.PreBooked
-                },
-                new Booking
-                {
-                    Id            = 1002,
-                    CustomerName  = "Jane Smith",
-                    PhoneNumber   = "0823456789",
-                    AppointmentAt = DateTime.Today.AddHours(11).AddMinutes(30),
-                    Status        = JobStatus.InProgress,
-                    Type          = JobType.WalkIn
-                },
-                new Booking
-                {
-                    Id            = 1003,
-                    CustomerName  = "Mark Lee",
-                    PhoneNumber   = "0834567890",
-                    AppointmentAt = DateTime.Today.AddDays(1).AddHours(13),
-                    Status        = JobStatus.Cancelled,
-                    Type          = JobType.PreBooked
-                }
-            };
+            _allBookings = await JobService.GetAllAsync();
         }
 
         #endregion

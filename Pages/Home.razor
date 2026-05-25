@@ -1,6 +1,8 @@
 ﻿@page "/"
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.JobService JobService
+@inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
 
 <div class="p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 
@@ -15,22 +17,24 @@
     <!-- Upcoming Bookings -->
     <div class="col-span-1 md:col-span-2 bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
         <h2 class="text-2xl font-bold text-clickup-accent mb-4">Scheduled Bookings</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-grow">
-            <!-- Booking Card -->
-            <div class="bg-clickup-surface border border-clickup-border p-4 rounded-xl hover:border-clickup-accent transition">
-                <h3 class="font-bold text-lg mb-1">Car Wash #123</h3>
-                <p class="text-clickup-muted">📅 2025-09-03</p>
-                <p class="text-clickup-muted">📍 Fourways Mall</p>
-                <span class="inline-block mt-2 px-3 py-1 bg-clickup-green text-black rounded-full text-sm">✅ Confirmed</span>
+        @if (!upcomingBookings.Any())
+        {
+            <p class="text-clickup-muted text-sm">No upcoming bookings. <a href="/book" class="text-clickup-accent underline">Book a wash</a>.</p>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-grow">
+                @foreach (var b in upcomingBookings)
+                {
+                    <div class="bg-clickup-surface border border-clickup-border p-4 rounded-xl hover:border-clickup-accent transition">
+                        <h3 class="font-bold text-lg mb-1">@b.ServiceType #@b.Id</h3>
+                        <p class="text-clickup-muted">📅 @b.AppointmentAt.ToString("yyyy-MM-dd")</p>
+                        <p class="text-clickup-muted">👤 @b.CustomerName</p>
+                        <span class="inline-block mt-2 px-3 py-1 rounded-full text-sm status-badge @GetStatusBadgeClass(b.Status)">@b.Status</span>
+                    </div>
+                }
             </div>
-
-            <div class="bg-clickup-surface border border-clickup-border p-4 rounded-xl hover:border-clickup-accent transition">
-                <h3 class="font-bold text-lg mb-1">Car Wash #124</h3>
-                <p class="text-clickup-muted">📅 2025-09-05</p>
-                <p class="text-clickup-muted">📍 Fourways Mall</p>
-                <span class="inline-block mt-2 px-3 py-1 bg-clickup-yellow text-black rounded-full text-sm">⏳ Pending</span>
-            </div>
-        </div>
+        }
     </div>
 
     <!-- Stats Panel -->
@@ -38,20 +42,20 @@
         <h2 class="text-2xl font-bold text-clickup-accent mb-4">Your Stats</h2>
         <div class="grid grid-cols-2 gap-4">
             <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">15</h3>
-                <p class="text-clickup-muted text-sm">Total Washes</p>
+                <h3 class="text-3xl font-bold text-clickup-accent">@totalBookings</h3>
+                <p class="text-clickup-muted text-sm">Total Bookings</p>
             </div>
             <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">3</h3>
+                <h3 class="text-3xl font-bold text-clickup-accent">@upcomingCount</h3>
                 <p class="text-clickup-muted text-sm">Upcoming</p>
             </div>
             <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">R1200</h3>
+                <h3 class="text-3xl font-bold text-clickup-accent">R@totalSpend.ToString("N0")</h3>
                 <p class="text-clickup-muted text-sm">Total Spend</p>
             </div>
             <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">250</h3>
-                <p class="text-clickup-muted text-sm">Loyalty Points</p>
+                <h3 class="text-3xl font-bold text-clickup-accent">@completedCount</h3>
+                <p class="text-clickup-muted text-sm">Completed</p>
             </div>
         </div>
     </div>
@@ -64,17 +68,46 @@
                 <p class="text-clickup-muted">✅ Book early on weekends to avoid delays.</p>
             </div>
             <div class="bg-clickup-dark rounded-xl p-4 shadow-clickup">
-                <p class="text-clickup-muted">⭐ Earn double loyalty points during promotions.</p>
+                <p class="text-clickup-muted">⭐ Bookings saved offline will sync automatically when you reconnect.</p>
             </div>
         </div>
     </div>
 
 </div>
 
-@code{
-    protected override void OnInitialized()
+@code {
+    private List<Booking> upcomingBookings = new();
+    private int totalBookings;
+    private int upcomingCount;
+    private int completedCount;
+    private decimal totalSpend;
+
+    protected override async Task OnInitializedAsync()
     {
-        // Subscribe to title changes so the header updates dynamically
         PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+
+        var all = await JobService.GetAllAsync();
+        var now = DateTime.Now;
+
+        upcomingBookings = all
+            .Where(b => b.AppointmentAt > now && b.Status != JobStatus.Cancelled)
+            .OrderBy(b => b.AppointmentAt)
+            .Take(4)
+            .ToList();
+
+        totalBookings  = all.Count;
+        upcomingCount  = all.Count(b => b.AppointmentAt > now && b.Status != JobStatus.Cancelled);
+        completedCount = all.Count(b => b.Status == JobStatus.Completed);
+        totalSpend     = all.Where(b => b.Status == JobStatus.Completed).Sum(b => b.TotalAmount);
     }
+
+    private string GetStatusBadgeClass(JobStatus status) =>
+        status switch
+        {
+            JobStatus.Waiting    => "status-waiting",
+            JobStatus.InProgress => "status-inprogress",
+            JobStatus.Completed  => "status-completed",
+            JobStatus.Cancelled  => "status-cancelled",
+            _                    => "status-waiting"
+        };
 }
