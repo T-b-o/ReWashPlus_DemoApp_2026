@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ReWashPlus_DemoApp.Layout
 {
-    public partial class NavMenu : LayoutComponentBase
+    public partial class NavMenu : ComponentBase
     {
         protected bool isCollapsed = false;
         protected bool isMobileMenuOpen = false;

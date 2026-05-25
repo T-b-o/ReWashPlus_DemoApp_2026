@@ -1,15 +1,67 @@
 @page "/payments"
-@using ReWashPlus_DemoApp.Services
-@inject PageTitleService PageTitleService
+@using ReWashPlus_DemoApp.Models
+@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
 
-<div class="p-6">
-    <h1 class="text-2xl font-bold text-clickup-accent">Payments</h1>
-    <p class="text-sm text-clickup-muted">This is the payments overview. Implement payment list and actions here.</p>
+<div class="p-6 space-y-6">
+
+    <h1 class="text-3xl font-bold text-clickup-accent">Payments</h1>
+
+    <div class="overflow-x-auto bg-clickup-light border border-clickup-border rounded-xl">
+        <table class="min-w-full divide-y divide-clickup-border">
+            <thead class="border-b border-clickup-border">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Booking #</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Method</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-clickup-accent uppercase tracking-wider">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-clickup-border">
+                @if (!payments.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-6 text-center text-sm text-clickup-muted">No payments recorded yet.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var p in payments)
+                    {
+                        <tr class="hover:bg-clickup-surface transition">
+                            <td class="px-6 py-4 text-sm text-clickup-text">@p.Id</td>
+                            <td class="px-6 py-4 text-sm text-clickup-text">#@p.JobId</td>
+                            <td class="px-6 py-4 text-sm font-semibold text-clickup-accent">R @p.Amount.ToString("N2")</td>
+                            <td class="px-6 py-4 text-sm text-clickup-text">@p.Method</td>
+                            <td class="px-6 py-4 text-sm">
+                                <span class="status-badge @GetStatusClass(p.Status)">@p.Status</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-clickup-text">@p.CreatedAt.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
 </div>
 
 @code {
-    protected override void OnInitialized()
+    private List<Payment> payments = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        PageTitleService.TitleChanged += () => InvokeAsync(StateHasChanged);
+        payments = await PaymentService.GetAllAsync();
     }
+
+    private string GetStatusClass(PaymentStatus status) =>
+        status switch
+        {
+            PaymentStatus.Completed => "status-completed",
+            PaymentStatus.Pending   => "status-waiting",
+            PaymentStatus.Failed    => "status-cancelled",
+            _                       => "status-waiting"
+        };
 }

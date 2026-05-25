@@ -32,7 +32,7 @@ namespace ReWashPlus_DemoApp.Services
         {
             if (_initialized) return;
 
-            IsOnline = await _js.InvokeAsync<bool>("navigator.onLine");
+            IsOnline = await _js.InvokeAsync<bool>("rewashConnectivity.isOnline");
             _selfRef = DotNetObjectReference.Create(this);
             await _js.InvokeVoidAsync("rewashConnectivity.initialize", _selfRef);
             _initialized = true;
