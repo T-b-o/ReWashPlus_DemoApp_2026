@@ -1,0 +1,28 @@
+<section class="mt-6">
+    <h2 class="text-white text-lg font-bold mb-3 px-4">Services</h2>
+
+    <!-- Horizontally scrollable row — no visible scrollbar -->
+    <div class="flex gap-3 overflow-x-auto pb-2 px-4 scrollbar-hide">
+        @foreach (var svc in _services)
+        {
+            <button class="flex flex-col items-center justify-center bg-clickup-light rounded-2xl p-4 w-24 min-w-24 h-24 shrink-0 active:bg-clickup-surface transition-colors"
+                    aria-label="@svc.Name">
+                <span class="text-2xl mb-2 leading-none">@svc.Icon</span>
+                <span class="text-clickup-text text-xs font-medium text-center leading-tight">@svc.Name</span>
+            </button>
+        }
+    </div>
+</section>
+
+@code {
+    private record ServiceItem(string Icon, string Name);
+
+    private static readonly ServiceItem[] _services =
+    [
+        new("🧼", "Basic\u00a0Wash"),
+        new("✨", "Deluxe\u00a0Wash"),
+        new("💎", "Premium\u00a0Detail"),
+        new("🏠", "Home\u00a0Wash"),
+        new("🏢", "Office\u00a0Wash"),
+    ];
+}

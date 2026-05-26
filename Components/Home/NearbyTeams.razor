@@ -1,0 +1,40 @@
+<section class="mt-6 mx-4">
+    <h2 class="text-white text-lg font-bold mb-3">Nearby Teams</h2>
+
+    <div class="bg-clickup-light rounded-2xl overflow-hidden">
+
+        <!--
+            Map placeholder.
+            Future: replace with Leaflet + OpenStreetMap embed.
+            Technician live tracking will be added via SignalR.
+        -->
+        <div class="bg-clickup-surface h-40 flex flex-col items-center justify-center gap-2">
+            <div class="w-12 h-12 rounded-full bg-clickup-dark flex items-center justify-center">
+                <i class="fas fa-map text-clickup-accent text-xl"></i>
+            </div>
+            <p class="text-clickup-muted text-xs text-center leading-relaxed">
+                Live map coming soon<br/>
+                <span class="opacity-60">Leaflet · OpenStreetMap</span>
+            </p>
+        </div>
+
+        <!-- Nearby team card -->
+        <div class="p-4 flex items-center gap-4 border-t border-clickup-border">
+            <div class="w-10 h-10 bg-clickup-accent/20 rounded-full flex items-center justify-center shrink-0">
+                <i class="fas fa-car text-clickup-accent"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-white font-semibold text-sm">📍 Fourways Mobile Team</p>
+                <p class="text-clickup-muted text-xs mt-0.5">
+                    4 min away ·
+                    <span class="text-green-400 font-semibold">Open now</span>
+                </p>
+            </div>
+            <a href="/book"
+               class="bg-clickup-accent text-white text-xs font-bold px-3 py-2 rounded-xl active:bg-clickup-accentDark transition-colors shrink-0">
+                Book
+            </a>
+        </div>
+
+    </div>
+</section>

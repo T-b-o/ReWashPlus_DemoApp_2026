@@ -1,0 +1,257 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthService AuthService
+@inject ConnectivityService Connectivity
+@inject NavigationManager Nav
+
+<div class="min-h-screen bg-clickup-dark text-clickup-text">
+
+    <!-- â•â•â• Fixed top bar â€” visible on every page â•â•â•â•â•â•â•â•â•â• -->
+    <header class="fixed top-0 left-0 right-0 z-30 bg-clickup-light border-b border-clickup-border h-16 flex items-center justify-between px-4">
+
+        <!-- Left: hamburger + logo -->
+        <div class="flex items-center gap-3">
+            <button class="w-10 h-10 flex items-center justify-center rounded-xl bg-clickup-surface text-clickup-accent active:bg-clickup-dark transition-colors"
+                    @onclick="OpenMenu"
+                    aria-label="Open menu">
+                <i class="fas fa-bars text-lg"></i>
+            </button>
+            <span class="text-xl font-extrabold text-cyan-400 tracking-wide">ReWash+</span>
+        </div>
+
+        <!-- Right: connectivity indicator + avatar -->
+        <div class="flex items-center gap-2.5">
+
+            <!-- Online / Offline dot -->
+            <span class="flex items-center gap-1.5 text-xs font-medium @(Connectivity.IsOnline ? "text-green-400" : "text-red-400")">
+                <span class="w-2 h-2 rounded-full @(Connectivity.IsOnline ? "bg-green-400" : "bg-red-400") animate-pulse"></span>
+                <span class="hidden sm:inline">@(Connectivity.IsOnline ? "Online" : "Offline")</span>
+            </span>
+
+            <!-- Avatar â€” tapping opens profile dropdown -->
+            <div class="relative">
+                <button class="w-11 h-11 rounded-full bg-clickup-accent flex items-center justify-center text-white font-bold text-sm shadow-clickup shrink-0"
+                        @onclick="ToggleProfile"
+                        aria-label="Account menu"
+                        title="Account">
+                    @_userInitials
+                </button>
+            </div>
+
+        </div>
+
+    </header>
+
+    <!-- Profile dropdown backdrop -->
+    @if (_isProfileOpen)
+    {
+        <div class="fixed inset-0 z-40" @onclick="CloseProfile"></div>
+
+        <!-- Dropdown card â€” anchored to top-right under the header -->
+        <div class="fixed top-[4.25rem] right-3 z-50 bg-clickup-light border border-clickup-border rounded-2xl shadow-clickup overflow-hidden min-w-44">
+            <a href="/profile"
+               class="flex items-center gap-3 px-4 py-3.5 text-clickup-text hover:bg-clickup-surface active:bg-clickup-surface transition-colors text-sm"
+               @onclick="CloseProfile">
+                <i class="fas fa-user text-cyan-400 w-4 text-center"></i>
+                View Profile
+            </a>
+            <div class="border-t border-clickup-border"></div>
+            <button class="flex items-center gap-3 px-4 py-3.5 text-clickup-red hover:bg-clickup-surface active:bg-clickup-surface transition-colors text-sm w-full text-left"
+                    @onclick="HandleLogout">
+                <i class="fas fa-sign-out-alt text-clickup-red w-4 text-center"></i>
+                Logout
+            </button>
+        </div>
+    }
+
+    <!-- â•â•â• Scrollable page content â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <main class="pt-16 pb-28 min-h-screen">
+        @Body
+    </main>
+
+    <!-- â•â•â• Bottom navigation â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <BottomNav />
+
+    <!-- â•â•â• Quick Book FAB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <QuickBookFab OnClick="HandleQuickBook" />
+
+    <!-- â•â•â• Side drawer â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    @if (_isMenuOpen)
+    {
+        <div class="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+             @onclick="CloseMenu"></div>
+
+        <div class="fixed top-0 left-0 h-full w-72 bg-clickup-light z-50 flex flex-col shadow-2xl">
+
+            <!-- Drawer header -->
+            <div class="flex items-center justify-between px-5 py-6 border-b border-clickup-border">
+                <span class="text-2xl font-extrabold text-cyan-400 tracking-wide">ReWash+</span>
+                <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-clickup-surface text-clickup-muted active:bg-clickup-dark transition-colors"
+                        @onclick="CloseMenu"
+                        aria-label="Close menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Drawer links -->
+            <nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+
+                @foreach (var link in _menuLinks)
+                {
+                    <a href="@link.Href"
+                       class="flex items-center gap-3 px-3 py-3 rounded-xl text-clickup-text hover:bg-clickup-surface active:bg-clickup-surface transition-colors"
+                       @onclick="CloseMenu">
+                        <i class="@link.Icon text-cyan-400 w-5 text-center"></i>
+                        <span class="font-medium">@link.Label</span>
+                    </a>
+                }
+
+                <!-- Admin section â€” BranchManager and above -->
+                @if (_isAdmin)
+                {
+                    <div class="mt-4 pt-4 border-t border-clickup-border">
+                        <p class="text-clickup-muted uppercase tracking-wide text-xs mb-3 px-3">Admin</p>
+                        @foreach (var link in _adminLinks)
+                        {
+                            <a href="@link.Href"
+                               class="flex items-center gap-3 px-3 py-3 rounded-xl text-clickup-text hover:bg-clickup-surface active:bg-clickup-surface transition-colors"
+                               @onclick="CloseMenu">
+                                <i class="@link.Icon text-cyan-400 w-5 text-center"></i>
+                                <span class="font-medium">@link.Label</span>
+                            </a>
+                        }
+                    </div>
+                }
+
+            </nav>
+
+            <!-- Drawer footer â€” user identity + logout -->
+            @if (AuthService.CurrentUser is { } sessionUser)
+            {
+                <div class="border-t border-clickup-border p-4">
+
+                    <!-- User info row -->
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-clickup-accent flex items-center justify-center text-white font-bold text-sm shrink-0">
+                            @_userInitials
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-clickup-text text-sm font-semibold truncate">@_userName</p>
+                            <p class="text-clickup-muted text-xs truncate">@sessionUser.Email</p>
+                        </div>
+                    </div>
+
+                    <!-- Logout button -->
+                    <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-clickup-red bg-clickup-surface hover:bg-clickup-dark active:bg-clickup-dark transition-colors text-sm font-medium"
+                            @onclick="HandleLogout">
+                        <i class="fas fa-sign-out-alt w-4 text-center"></i>
+                        Logout
+                    </button>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
+
+@code {
+    private string _userInitials  = "TM";
+    private string _userName      = string.Empty;
+    private bool   _isMenuOpen    = false;
+    private bool   _isProfileOpen = false;
+    private bool   _isAdmin       = false;
+
+    private record MenuLink(string Label, string Icon, string Href);
+
+    private static readonly MenuLink[] _menuLinks =
+    [
+        new("Home",          "fas fa-house",         "/"),
+        new("Book a Wash",   "fas fa-calendar-plus", "/book"),
+        new("My Bookings",   "fas fa-list",          "/my-bookings"),
+        new("Payments",      "fas fa-credit-card",   "/payments"),
+        new("Notifications", "fas fa-bell",          "/notifications"),
+        new("Profile",       "fas fa-user",          "/profile"),
+    ];
+
+    private static readonly MenuLink[] _adminLinks =
+    [
+        new("Dashboard",       "fas fa-tachometer-alt", "/admin/dashboard"),
+        new("Manage Bookings", "fas fa-calendar-check", "/admin/manage-bookings"),
+        new("Manage Payments", "fas fa-wallet",         "/admin/manage-payments"),
+        new("Users",           "fas fa-users",          "/admin/users"),
+        new("Reports",         "fas fa-chart-line",     "/admin/reports"),
+        new("Settings",        "fas fa-cogs",           "/admin/settings"),
+    ];
+
+    private static readonly HashSet<string> PublicPaths =
+        new(StringComparer.OrdinalIgnoreCase) { "", "/", "/login", "/register", "/register-tenant" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged          += OnLocationChanged;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+        try { await Connectivity.InitializeAsync(); } catch { /* non-fatal */ }
+        try { await AuthService.InitializeAsync();  } catch { /* non-fatal */ }
+        RefreshUserState();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) GuardAuth(Nav.Uri);
+        return Task.CompletedTask;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _isMenuOpen    = false;
+        _isProfileOpen = false;
+        RefreshUserState();
+        GuardAuth(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnConnectivityChanged() => InvokeAsync(StateHasChanged);
+
+    private void RefreshUserState()
+    {
+        if (AuthService.CurrentUser is { } user)
+        {
+            var parts = user.FullName?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+            _userInitials = parts.Length >= 2
+                ? $"{parts[0][0]}{parts[^1][0]}".ToUpper()
+                : user.FullName?.Length > 0 ? user.FullName[..1].ToUpper() : "TM";
+            _userName = user.FullName is { Length: > 0 } n ? n : user.Email;
+            _isAdmin  = user.Role >= UserRole.BranchManager;
+        }
+    }
+
+    private void GuardAuth(string url)
+    {
+        var path = new Uri(url).AbsolutePath.TrimEnd('/');
+        if (!AuthService.IsAuthenticated && !PublicPaths.Contains(path))
+            Nav.NavigateTo("/login", replace: true);
+    }
+
+    private void OpenMenu()      { _isMenuOpen = true;  _isProfileOpen = false; }
+    private void CloseMenu()     => _isMenuOpen    = false;
+    private void ToggleProfile() { _isProfileOpen = !_isProfileOpen; _isMenuOpen = false; }
+    private void CloseProfile()  => _isProfileOpen = false;
+
+    private async Task HandleLogout()
+    {
+        _isProfileOpen = false;
+        _isMenuOpen    = false;
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login", replace: true);
+    }
+
+    private void HandleQuickBook() => Nav.NavigateTo("/book");
+
+    public void Dispose()
+    {
+        Nav.LocationChanged          -= OnLocationChanged;
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+    }
+}

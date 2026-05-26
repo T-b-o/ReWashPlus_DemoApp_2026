@@ -1,0 +1,10 @@
+<!-- Fixed above the bottom nav; right-thumb reachable -->
+<button class="fixed bottom-20 right-5 w-16 h-16 rounded-full bg-cyan-500 text-white shadow-lg flex items-center justify-center z-50 active:bg-cyan-600 active:scale-95 transition-all"
+        @onclick="OnClick"
+        aria-label="Quick Book">
+    <i class="fas fa-plus text-xl"></i>
+</button>
+
+@code {
+    [Parameter] public EventCallback OnClick { get; set; }
+}
