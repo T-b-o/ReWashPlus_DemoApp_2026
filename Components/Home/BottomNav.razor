@@ -1,0 +1,33 @@
+@inject NavigationManager Nav
+
+<nav class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 flex items-center justify-around h-16 z-40">
+    @foreach (var tab in _tabs)
+    {
+        var isActive = IsTabActive(tab.Href);
+        <button class="flex flex-col items-center justify-center flex-1 h-full gap-0.5 @(isActive ? "text-cyan-400" : "text-gray-500") active:opacity-70 transition-colors"
+                @onclick="() => Nav.NavigateTo(tab.Href)"
+                aria-label="@tab.Label">
+            <i class="@tab.Icon text-lg"></i>
+            <span class="text-xs font-medium">@tab.Label</span>
+        </button>
+    }
+</nav>
+
+@code {
+    private record TabItem(string Icon, string Label, string Href);
+
+    private static readonly TabItem[] _tabs =
+    [
+        new("fas fa-house",       "Home",     "/"),
+        new("fas fa-calendar",    "Bookings", "/my-bookings"),
+        new("fas fa-credit-card", "Payments", "/payments"),
+        new("fas fa-star",        "Rewards",  "/rewards"),
+    ];
+
+    private bool IsTabActive(string href)
+    {
+        var current = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').ToLowerInvariant();
+        var target  = href.TrimEnd('/').ToLowerInvariant();
+        return target == "" || target == "/" ? current is "" or "/" : current == target;
+    }
+}

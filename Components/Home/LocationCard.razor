@@ -1,0 +1,23 @@
+<div class="mx-4 mt-4">
+    <!--
+        Future: GPS detection, current-location button, map picker, saved locations.
+        For now this is a navigable tap target that routes to location selection.
+    -->
+    <button class="w-full bg-clickup-light border border-clickup-border rounded-2xl shadow-clickup px-5 py-4 flex items-center gap-4 text-left active:bg-clickup-surface transition-colors"
+            aria-label="Select wash location">
+
+        <span class="w-10 h-10 bg-clickup-accent/20 rounded-full flex items-center justify-center shrink-0">
+            <i class="fas fa-map-marker-alt text-clickup-accent text-base"></i>
+        </span>
+
+        <div class="flex-1 min-w-0">
+            <p class="text-clickup-muted text-xs font-semibold uppercase tracking-wider mb-0.5">Wash location</p>
+            <p class="text-clickup-text font-semibold text-base truncate">
+                📍 Where should we wash your car?
+            </p>
+        </div>
+
+        <i class="fas fa-chevron-right text-clickup-muted text-sm shrink-0"></i>
+
+    </button>
+</div>
