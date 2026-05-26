@@ -1,144 +1,38 @@
 ﻿@page "/"
-@using ReWashPlus_DemoApp.Models
-@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.JobService JobService
-@inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
-@inject ReWashPlus_DemoApp.Services.AuthService AuthService
 
-<div class="p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+<!-- ─── Section 1: Greeting header ──────────────────────── -->
+<HomeHeader />
 
-    <!-- Hero / Welcome Card -->
-    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light rounded-2xl shadow-clickup p-8 text-center">
-        <h1 class="text-4xl lg:text-5xl font-bold text-clickup-accent mb-3">
-            @(AuthService.IsAuthenticated ? $"Welcome Back, {AuthService.CurrentUser?.FullName?.Split(' ')[0] ?? "there"}!" : "Welcome to ReWash+")
-        </h1>
-        <p class="text-clickup-muted text-lg lg:text-xl max-w-2xl mx-auto">
-            Manage your car washes, track bookings and payments — all in one place.
-        </p>
-        @if (!AuthService.IsAuthenticated)
-        {
-            <div class="mt-6 flex flex-wrap justify-center gap-4">
-                <a href="/login"    class="btn-primary px-6 py-3 text-base"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</a>
-                <a href="/register" class="btn-secondary px-6 py-3 text-base"><i class="fas fa-user-plus mr-2"></i>Register</a>
-            </div>
-        }
-    </div>
+<!-- ─── Section 2: Location ──────────────────────────────── -->
+<LocationCard />
 
-    <!-- Google Map -->
-    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light rounded-2xl shadow-clickup overflow-hidden">
-        <div class="p-4 border-b border-clickup-border">
-            <h2 class="text-xl font-semibold text-clickup-accent"><i class="fas fa-map-marker-alt mr-2"></i>Find Us</h2>
-            <p class="text-clickup-muted text-sm mt-1">ReWash+ service locations near you</p>
-        </div>
-        <div class="w-full" style="height:320px;">
-            <iframe
-                title="ReWash+ Location Map"
-                src="https://maps.google.com/maps?q=Johannesburg,+South+Africa&t=&z=13&ie=UTF8&iwloc=&output=embed"
-                width="100%"
-                height="320"
-                style="border:0;"
-                allowfullscreen=""
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-        </div>
-    </div>
+<!-- ─── Section 3: Main Booking Card ────────────────────── -->
+<BookingCard />
 
-    @if (AuthService.IsAuthenticated)
-    {
-    <!-- Upcoming Bookings -->
-    <div class="col-span-1 md:col-span-2 bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
-        <h2 class="text-2xl font-bold text-clickup-accent mb-4">Scheduled Bookings</h2>
-        @if (!upcomingBookings.Any())
-        {
-            <p class="text-clickup-muted text-sm">No upcoming bookings. <a href="/book" class="text-clickup-accent underline">Book a wash</a>.</p>
-        }
-        else
-        {
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-grow">
-                @foreach (var b in upcomingBookings)
-                {
-                    <div class="bg-clickup-surface border border-clickup-border p-4 rounded-xl hover:border-clickup-accent transition">
-                        <h3 class="font-bold text-lg mb-1">@b.ServiceType #@b.Id</h3>
-                        <p class="text-clickup-muted">📅 @b.AppointmentAt.ToString("yyyy-MM-dd")</p>
-                        <p class="text-clickup-muted">👤 @b.CustomerName</p>
-                        <span class="inline-block mt-2 px-3 py-1 rounded-full text-sm status-badge @GetStatusBadgeClass(b.Status)">@b.Status</span>
-                    </div>
-                }
-            </div>
-        }
-    </div>
+<!-- ─── Section 4: Quick Services ───────────────────────── -->
+<QuickServices />
 
-    <!-- Stats Panel -->
-    <div class="col-span-1 bg-clickup-light rounded-2xl shadow-clickup p-6">
-        <h2 class="text-2xl font-bold text-clickup-accent mb-4">Your Stats</h2>
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">@totalBookings</h3>
-                <p class="text-clickup-muted text-sm">Total Bookings</p>
-            </div>
-            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">@upcomingCount</h3>
-                <p class="text-clickup-muted text-sm">Upcoming</p>
-            </div>
-            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">R@totalSpend.ToString("N0")</h3>
-                <p class="text-clickup-muted text-sm">Total Spend</p>
-            </div>
-            <div class="bg-clickup-dark rounded-xl p-4 text-center shadow-clickup">
-                <h3 class="text-3xl font-bold text-clickup-accent">@completedCount</h3>
-                <p class="text-clickup-muted text-sm">Completed</p>
-            </div>
-        </div>
-    </div>
-    }
+<!-- ─── Section 5: Active Booking Status ────────────────── -->
+<ActiveBookingStatus IsActive="@_hasActiveBooking"
+                     WasherName="Sipho"
+                     MinutesRemaining="15"
+                     CurrentStep="1" />
 
-    <!-- Quick Tips -->
-    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-clickup-light border border-clickup-border rounded-xl p-6">
-        <h2 class="text-xl font-semibold text-clickup-accent mb-4">Quick Tips 💡</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-clickup-dark rounded-xl p-4 shadow-clickup">
-                <p class="text-clickup-muted">✅ Book early on weekends to avoid delays.</p>
-            </div>
-            <div class="bg-clickup-dark rounded-xl p-4 shadow-clickup">
-                <p class="text-clickup-muted">⭐ Bookings saved offline will sync automatically when you reconnect.</p>
-            </div>
-        </div>
-    </div>
+<!-- ─── Section 6: Nearby Teams ─────────────────────────── -->
+<NearbyTeams />
 
-</div>
+<!-- ─── Section 7: Membership ───────────────────────────── -->
+<MembershipCard />
+
+<div class="h-4"></div>
 
 @code {
-    private List<Booking> upcomingBookings = new();
-    private int totalBookings;
-    private int upcomingCount;
-    private int completedCount;
-    private decimal totalSpend;
+    private bool _hasActiveBooking = false;
 
     protected override async Task OnInitializedAsync()
     {
-        var all = await JobService.GetAllAsync();
-        var now = DateTime.Now;
-
-        upcomingBookings = all
-            .Where(b => b.AppointmentAt > now && b.Status != JobStatus.Cancelled)
-            .OrderBy(b => b.AppointmentAt)
-            .Take(4)
-            .ToList();
-
-        totalBookings  = all.Count;
-        upcomingCount  = all.Count(b => b.AppointmentAt > now && b.Status != JobStatus.Cancelled);
-        completedCount = all.Count(b => b.Status == JobStatus.Completed);
-        totalSpend     = all.Where(b => b.Status == JobStatus.Completed).Sum(b => b.TotalAmount);
+        var bookings = await JobService.GetAllAsync();
+        _hasActiveBooking = bookings.Any(b => b.Status == JobStatus.InProgress);
     }
-
-    private string GetStatusBadgeClass(JobStatus status) =>
-        status switch
-        {
-            JobStatus.Waiting    => "status-waiting",
-            JobStatus.InProgress => "status-inprogress",
-            JobStatus.Completed  => "status-completed",
-            JobStatus.Cancelled  => "status-cancelled",
-            _                    => "status-waiting"
-        };
 }

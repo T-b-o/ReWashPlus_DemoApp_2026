@@ -1,0 +1,55 @@
+@if (IsActive)
+{
+    <section class="mt-6 mx-4">
+        <!--
+            Future: wire up to SignalR hub for real-time status updates.
+            WasherName, MinutesRemaining, and CurrentStep will be pushed live.
+        -->
+        <div class="bg-clickup-light rounded-2xl p-5">
+
+            <!-- Washer info row -->
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-11 h-11 rounded-full bg-clickup-accent/20 flex items-center justify-center shrink-0">
+                    <i class="fas fa-soap text-clickup-accent text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-white font-bold text-base">@WasherName is washing your car</p>
+                    <p class="text-clickup-muted text-sm mt-0.5">@MinutesRemaining minutes remaining</p>
+                </div>
+            </div>
+
+            <!-- Step labels -->
+            <div class="flex justify-between mb-2">
+                @for (int i = 0; i < _steps.Length; i++)
+                {
+                    var idx         = i;
+                    var isPast      = idx < CurrentStep;
+                    var isCurrent   = idx == CurrentStep;
+                    <span class="text-xs font-medium @(isCurrent ? "text-clickup-accent font-semibold" : isPast ? "text-clickup-green" : "text-clickup-muted")">
+                        @_steps[idx]
+                    </span>
+                }
+            </div>
+
+            <!-- Progress bar -->
+            <div class="bg-clickup-surface rounded-full h-2">
+                <div class="bg-gradient-to-r from-clickup-accent to-clickup-green h-2 rounded-full transition-all duration-500"
+                     style="width:@(ProgressPercent)%"></div>
+            </div>
+
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public bool   IsActive         { get; set; } = false;
+    [Parameter] public string WasherName       { get; set; } = "Sipho";
+    [Parameter] public int    MinutesRemaining { get; set; } = 15;
+    /// <summary>0 = Arriving, 1 = Washing, 2 = Drying, 3 = Done</summary>
+    [Parameter] public int    CurrentStep      { get; set; } = 1;
+
+    private static readonly string[] _steps = ["Arriving", "Washing", "Drying", "Done"];
+
+    private int ProgressPercent =>
+        _steps.Length > 1 ? (int)((CurrentStep / (double)(_steps.Length - 1)) * 100) : 0;
+}

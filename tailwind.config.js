@@ -17,7 +17,8 @@ module.exports = {
                     text: "#E2E4EF",    // primary text
                     muted: "#8589A5",   // secondary / placeholder text
                     accent: "#7B68EE",  // purple accent
-                    green: "#23C8B0",   // success
+                    accentDark: "#5A48CC", // darker purple for gradients
+                    green: "#23C8B0",   // success / teal
                     yellow: "#F59E0B",  // warning
                     red: "#F87171",     // danger
                     blue: "#60A5FA",    // info
@@ -43,6 +44,16 @@ module.exports = {
         },
     },
     plugins: [
+        // Scrollbar-hide utility for horizontal service scroll
+        function ({ addUtilities }) {
+            addUtilities({
+                ".scrollbar-hide": {
+                    "-ms-overflow-style": "none",
+                    "scrollbar-width": "none",
+                    "&::-webkit-scrollbar": { display: "none" },
+                },
+            });
+        },
         function ({ addComponents }) {
             addComponents({
                 // Modal container
