@@ -5,9 +5,18 @@
 
 <div class="p-4 sm:p-6 space-y-6">
 
-    <!-- Header + Search -->
+    <!-- Header + Search + Connectivity -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 class="text-3xl font-bold text-clickup-accent">Bookings</h1>
+        <div class="flex items-center gap-3 flex-wrap">
+            <h1 class="text-3xl font-bold text-clickup-accent">Bookings</h1>
+
+            <!-- Connectivity pill -->
+            <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full
+                         @(Connectivity.IsOnline ? "bg-green-400/15 text-green-400" : "bg-red-400/15 text-red-400")">
+                <span class="w-1.5 h-1.5 rounded-full @(Connectivity.IsOnline ? "bg-green-400" : "bg-red-400") animate-pulse"></span>
+                @(Connectivity.IsOnline ? "Online" : "Offline")
+            </span>
+        </div>
 
         <div class="relative w-full sm:w-80">
             <input type="text"

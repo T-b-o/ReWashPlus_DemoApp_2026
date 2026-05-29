@@ -1,24 +1,183 @@
 ﻿@page "/book"
 @using ReWashPlus_DemoApp.Models
-@inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
+@using ReWashPlus_DemoApp.Services
+@implements IDisposable
+@inject PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.JobService JobService
-@inject ReWashPlus_DemoApp.Services.ConnectivityService Connectivity
+@inject ConnectivityService Connectivity
+@inject AuthService AuthService
+@inject CarWashLocationService WashLocations
 
+<!-- ══ Last-Wash Confirmation Dialog ══════════════════════════════════════ -->
+@if (_showLastWashPrompt && _lastWash is not null)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-clickup-light rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-5">
+
+            <div class="text-center">
+                <span class="text-4xl">🚿</span>
+                <p class="text-clickup-muted text-xs uppercase font-semibold tracking-wider mt-2">Book again at your recent wash?</p>
+            </div>
+
+            <div class="bg-clickup-surface rounded-xl p-4 flex items-center gap-3">
+                <span class="w-10 h-10 bg-clickup-accent/20 rounded-full flex items-center justify-center shrink-0">
+                    <i class="fas fa-map-marker-alt text-clickup-accent"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-clickup-text font-bold text-sm truncate">@_lastWash.Name</p>
+                    <p class="text-clickup-muted text-xs truncate">@_lastWash.Address</p>
+                    <p class="text-xs mt-0.5 @(_lastWash.IsOpen ? "text-green-400" : "text-red-400") font-semibold">
+                        @(_lastWash.IsOpen ? "Open now" : "Currently closed") · @_lastWash.OpenHours
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button class="flex-1 btn-primary py-3 rounded-xl text-sm font-bold" @onclick="ConfirmLastWash">
+                    <i class="fas fa-check mr-2"></i>Yes, book here
+                </button>
+                <button class="flex-1 bg-clickup-surface text-clickup-text py-3 rounded-xl text-sm font-semibold border border-clickup-border"
+                        @onclick="PickDifferentWash">
+                    <i class="fas fa-map mr-2"></i>Choose different
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ══ Car Wash Selector Sheet ════════════════════════════════════════════ -->
+@if (_showWashSelector)
+{
+    <div class="fixed inset-0 z-50 bg-black/60 flex items-end justify-center">
+        <div class="bg-clickup-light rounded-t-3xl w-full max-w-lg max-h-[88vh] flex flex-col">
+
+            <!-- Sheet header -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-clickup-border">
+                <div>
+                    <h2 class="text-clickup-text font-bold text-lg">Select Car Wash</h2>
+                    <p class="text-clickup-muted text-xs mt-0.5">Sorted by distance from your location</p>
+                </div>
+                @if (_selectedWash is not null)
+                {
+                    <button class="w-9 h-9 rounded-xl bg-clickup-surface flex items-center justify-center text-clickup-muted"
+                            @onclick="CloseWashSelector">
+                        <i class="fas fa-times"></i>
+                    </button>
+                }
+            </div>
+
+            <!-- Map placeholder -->
+            <div class="bg-clickup-surface mx-4 mt-4 rounded-xl h-36 flex flex-col items-center justify-center gap-2 border border-clickup-border">
+                <i class="fas fa-map text-clickup-accent text-3xl"></i>
+                <p class="text-clickup-muted text-xs text-center leading-relaxed">
+                    Interactive map coming soon<br />
+                    <span class="opacity-60">Leaflet · OpenStreetMap · Live tracking</span>
+                </p>
+            </div>
+
+            <!-- Nearby list -->
+            <div class="flex-1 overflow-y-auto px-4 pt-3 pb-2 space-y-2">
+                <p class="text-clickup-muted text-xs font-semibold uppercase tracking-wider px-1 mb-1">
+                    <i class="fas fa-location-dot mr-1"></i> Nearby Car Washes
+                </p>
+                @foreach (var wash in CarWashLocationService.AllLocations)
+                {
+                    var isSelected = _selectedWash?.Id == wash.Id;
+                    <button class="w-full bg-clickup-surface rounded-xl p-4 flex items-center gap-3 text-left border @(isSelected ? "border-clickup-accent" : "border-transparent") transition-colors active:bg-clickup-dark"
+                            @onclick="() => SelectWash(wash)">
+                        <span class="w-10 h-10 rounded-full bg-clickup-accent/20 flex items-center justify-center shrink-0">
+                            <i class="fas fa-car-wash text-clickup-accent text-sm"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-clickup-text font-semibold text-sm truncate">@wash.Name</p>
+                                <span class="text-clickup-muted text-xs whitespace-nowrap shrink-0">@wash.DistanceKm km away</span>
+                            </div>
+                            <p class="text-clickup-muted text-xs truncate mt-0.5">@wash.Address</p>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <span class="w-1.5 h-1.5 rounded-full @(wash.IsOpen ? "bg-green-400" : "bg-red-400")"></span>
+                                <span class="@(wash.IsOpen ? "text-green-400" : "text-red-400") text-xs font-semibold">
+                                    @(wash.IsOpen ? "Open" : "Closed")
+                                </span>
+                                <span class="text-clickup-muted text-xs">· @wash.OpenHours</span>
+                            </div>
+                        </div>
+                        @if (isSelected)
+                        {
+                            <i class="fas fa-circle-check text-clickup-accent text-lg shrink-0"></i>
+                        }
+                    </button>
+                }
+            </div>
+
+            <!-- Confirm button -->
+            @if (_selectedWash is not null)
+            {
+                <div class="p-4 border-t border-clickup-border">
+                    <button class="btn-primary w-full py-3.5 rounded-xl font-bold" @onclick="CloseWashSelector">
+                        <i class="fas fa-check mr-2"></i>Confirm — @_selectedWash.Name
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- ══ Main Content ════════════════════════════════════════════════════════ -->
 <div class="px-4 py-6">
 
     <!-- Page Header -->
-    <h1 class="text-4xl font-bold text-clickup-accent mb-6 text-center">Book a Wash — Rewash+</h1>
+    <h1 class="text-3xl font-bold text-clickup-accent mb-3 text-center">Book a Wash</h1>
 
-    <!-- Network Status -->
-    <div class="mb-6 text-center">
-        <p>
-            Network:
-            <strong class="@(Connectivity.IsOnline ? "text-clickup-accent" : "text-clickup-red")">@(Connectivity.IsOnline ? "Online" : "Offline")</strong>
-        </p>
+    <!-- Connectivity Banner -->
+    <div class="max-w-lg mx-auto mb-4">
+        <div class="flex items-center justify-center gap-2 py-2 px-4 rounded-xl @(Connectivity.IsOnline ? "bg-green-400/10" : "bg-red-400/10")">
+            <span class="w-2 h-2 rounded-full @(Connectivity.IsOnline ? "bg-green-400" : "bg-red-400") animate-pulse"></span>
+            <span class="text-sm font-medium @(Connectivity.IsOnline ? "text-green-400" : "text-red-400")">
+                @(Connectivity.IsOnline
+                    ? "Online — your booking will be saved immediately"
+                    : "Offline — booking will be saved locally and synced when reconnected")
+            </span>
+        </div>
+    </div>
+
+    <!-- Selected Car Wash Banner / Selector Prompt -->
+    <div class="max-w-lg mx-auto mb-5">
+        @if (_selectedWash is not null)
+        {
+            <button class="w-full bg-clickup-light border border-clickup-accent/50 rounded-2xl shadow-clickup px-4 py-3.5 flex items-center gap-3 text-left active:bg-clickup-surface transition-colors"
+                    @onclick="OpenWashSelector">
+                <span class="w-10 h-10 bg-clickup-accent/20 rounded-full flex items-center justify-center shrink-0">
+                    <i class="fas fa-map-marker-alt text-clickup-accent"></i>
+                </span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-clickup-muted text-xs font-semibold uppercase tracking-wider mb-0.5">Booking at</p>
+                    <p class="text-clickup-text font-bold text-base truncate">@_selectedWash.Name</p>
+                    <p class="text-clickup-muted text-xs truncate">@_selectedWash.Address · @_selectedWash.DistanceKm km away</p>
+                </div>
+                <span class="text-clickup-accent text-xs font-bold shrink-0">Change <i class="fas fa-chevron-right ml-1"></i></span>
+            </button>
+        }
+        else
+        {
+            <button class="w-full bg-clickup-surface border-2 border-dashed @(_washError ? "border-red-400" : "border-clickup-border") rounded-2xl px-4 py-4 flex items-center gap-3 text-left active:bg-clickup-light transition-colors"
+                    @onclick="OpenWashSelector">
+                <span class="w-10 h-10 rounded-full border border-clickup-border flex items-center justify-center shrink-0">
+                    <i class="fas fa-map-pin @(_washError ? "text-red-400" : "text-clickup-muted") text-lg"></i>
+                </span>
+                <div>
+                    <p class="@(_washError ? "text-red-400" : "text-clickup-text") font-semibold text-sm">
+                        @(_washError ? "⚠ Please select a car wash" : "Select a Car Wash")
+                    </p>
+                    <p class="text-clickup-muted text-xs mt-0.5">Tap to see nearby car washes sorted by distance</p>
+                </div>
+                <i class="fas fa-chevron-right text-clickup-muted ml-auto shrink-0"></i>
+            </button>
+        }
     </div>
 
     <!-- Booking Form Card -->
-    <div class="bg-clickup-light rounded-modal shadow-clickup p-6 max-w-lg mx-auto mb-8 space-y-4">
+    <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 max-w-lg mx-auto mb-8 space-y-4">
         <EditForm Model="bookingModel" OnValidSubmit="HandleValidSubmit" class="space-y-4">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-clickup-red" />
@@ -66,46 +225,132 @@
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" class="btn-primary w-full">Save Booking</button>
+            <button type="submit" class="btn-primary w-full py-3.5 text-base font-bold">
+                <i class="fas fa-calendar-check mr-2"></i>Save Booking
+            </button>
         </EditForm>
 
         <!-- Feedback Message -->
         @if (!string.IsNullOrEmpty(message))
         {
-            <div class="mt-4 p-3 bg-clickup-dark/70 text-clickup-text rounded shadow-clickup">@message</div>
+            <div class="mt-4 p-4 bg-clickup-accent/10 border border-clickup-accent/30 text-clickup-text rounded-xl flex items-start gap-3">
+                <i class="fas fa-circle-check text-clickup-accent mt-0.5"></i>
+                <span>@message</span>
+            </div>
         }
     </div>
 
     <!-- Recent Bookings -->
     <div class="max-w-4xl mx-auto space-y-4">
-        <h2 class="text-2xl font-bold text-clickup-accent mb-2">Recent Bookings</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach (var b in recentBookings)
-            {
-                <div class="bg-clickup-light rounded-xl shadow-clickup p-4 flex flex-col justify-between hover:scale-105 transition-transform">
-                    <div>
-                        <h3 class="font-bold text-clickup-accent mb-1">@b.CustomerName</h3>
-                        <p class="text-clickup-text text-sm mb-1">Service: <span class="font-semibold">@b.ServiceType</span></p>
-                        <p class="text-clickup-text text-sm mb-1">Date: <span class="font-semibold">@b.AppointmentAt.ToShortDateString()</span></p>
-                        <p class="text-clickup-text text-sm mb-1">Phone: <span class="font-semibold">@b.PhoneNumber</span></p>
-                        <p class="text-clickup-text text-sm mb-2">Status: <span class="status-badge @GetStatusColor(b.Status)">@b.Status</span></p>
+        <h2 class="text-xl font-bold text-clickup-accent mb-3">Recent Bookings</h2>
+        @if (!recentBookings.Any())
+        {
+            <p class="text-clickup-muted text-sm text-center py-6">No bookings yet.</p>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach (var b in recentBookings)
+                {
+                    <div class="bg-clickup-light rounded-xl shadow-clickup p-4 flex flex-col gap-1 hover:scale-105 transition-transform">
+                        <h3 class="font-bold text-clickup-accent text-sm">@b.CustomerName</h3>
+                        <p class="text-clickup-text text-xs">Service: <span class="font-semibold">@b.ServiceType</span></p>
+                        <p class="text-clickup-text text-xs">Date: <span class="font-semibold">@b.AppointmentAt.ToShortDateString()</span></p>
+                        <p class="text-clickup-text text-xs">Phone: <span class="font-semibold">@b.PhoneNumber</span></p>
+                        <p class="text-clickup-text text-xs mt-1">Status: <span class="status-badge @GetStatusColor(b.Status)">@b.Status</span></p>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+        }
     </div>
 
 </div>
 
 @code {
-    private Booking bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) };
+    [SupplyParameterFromQuery(Name = "washId")]
+    private string? WashId { get; set; }
+
+    private Booking bookingModel = new() { AppointmentAt = DateTime.Today.AddDays(1) };
     private string? message;
     private List<Booking> recentBookings = new();
 
+    private CarWashLocation? _selectedWash;
+    private bool             _showWashSelector;
+    private bool             _showLastWashPrompt;
+    private CarWashLocation? _lastWash;
+    private bool             _washError;
+
     protected override async Task OnInitializedAsync()
     {
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+
+        // Pre-populate user details from the active session
+        if (AuthService.CurrentUser is { } user)
+        {
+            bookingModel.CustomerName = user.FullName;
+            bookingModel.Email        = user.Email;
+            bookingModel.PhoneNumber  = user.PhoneNumber;
+        }
+
         await LoadBookingsAsync();
+
+        // Determine which car wash to present
+        if (!string.IsNullOrEmpty(WashId))
+        {
+            // Navigated here with a specific wash pre-selected (e.g. from NearbyTeams)
+            _selectedWash = CarWashLocationService.GetById(WashId);
+            if (_selectedWash is not null)
+                await WashLocations.SetLastUsedAsync(_selectedWash.Id);
+            else
+                _showWashSelector = true; // unknown ID — fall back to selector
+        }
+        else
+        {
+            // Check for a previously used car wash
+            var lastId = await WashLocations.GetLastUsedIdAsync();
+            _lastWash  = CarWashLocationService.GetById(lastId);
+
+            if (_lastWash is not null)
+                _showLastWashPrompt = true;   // ask: "Book again at [LastWash]?"
+            else
+                _showWashSelector   = true;   // first visit — open selector immediately
+        }
     }
+
+    private void OnConnectivityChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+    }
+
+    // ── Last-Wash Prompt ──────────────────────────────────────────────────
+
+    private void ConfirmLastWash()
+    {
+        _selectedWash       = _lastWash;
+        _showLastWashPrompt = false;
+    }
+
+    private void PickDifferentWash()
+    {
+        _showLastWashPrompt = false;
+        _showWashSelector   = true;
+    }
+
+    // ── Wash Selector ─────────────────────────────────────────────────────
+
+    private void OpenWashSelector()
+    {
+        _washError        = false;
+        _showWashSelector = true;
+    }
+
+    private void SelectWash(CarWashLocation wash) => _selectedWash = wash;
+
+    private void CloseWashSelector() => _showWashSelector = false;
+
+    // ── Data ──────────────────────────────────────────────────────────────
 
     private async Task LoadBookingsAsync()
     {
@@ -115,12 +360,30 @@
 
     private async Task HandleValidSubmit()
     {
-        await JobService.CreateAsync(bookingModel);
-        message = Connectivity.IsOnline
-            ? "Booking saved."
-            : "Booking saved offline. It will sync when you are online.";
+        if (_selectedWash is null)
+        {
+            _washError = true;
+            return;
+        }
 
-        bookingModel = new Booking { AppointmentAt = DateTime.Today.AddDays(1) };
+        // Persist the chosen wash so it becomes the "last-used" next time
+        await WashLocations.SetLastUsedAsync(_selectedWash.Id);
+
+        await JobService.CreateAsync(bookingModel);
+
+        message = Connectivity.IsOnline
+            ? $"Booking confirmed at {_selectedWash.Name}."
+            : $"Booking saved offline for {_selectedWash.Name}. It will sync when you are back online.";
+
+        // Reset form, keep user details pre-filled
+        bookingModel = new Booking
+        {
+            AppointmentAt = DateTime.Today.AddDays(1),
+            CustomerName  = AuthService.CurrentUser?.FullName    ?? string.Empty,
+            Email         = AuthService.CurrentUser?.Email       ?? string.Empty,
+            PhoneNumber   = AuthService.CurrentUser?.PhoneNumber ?? string.Empty,
+        };
+
         await LoadBookingsAsync();
         StateHasChanged();
     }

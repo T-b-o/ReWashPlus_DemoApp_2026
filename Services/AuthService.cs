@@ -239,6 +239,7 @@ namespace ReWashPlus_DemoApp.Services
                 TenantId    = user.TenantId,
                 Email       = user.Email,
                 FullName    = user.FullName,
+                PhoneNumber = user.PhoneNumber,
                 CompanyName = companyName,
                 Role        = user.Role
             };
