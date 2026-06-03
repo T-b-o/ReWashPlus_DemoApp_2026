@@ -97,7 +97,7 @@
 
     <div class="text-center text-sm text-clickup-muted">
         Already have an account?
-        <a href="/login" class="text-clickup-accent hover:underline ml-1">Sign in</a>
+        <a href="login" class="text-clickup-accent hover:underline ml-1">Sign in</a>
     </div>
 </div>
 
@@ -110,7 +110,7 @@
     protected override void OnInitialized()
     {
         if (AuthService.IsAuthenticated)
-            Nav.NavigateTo("/admin/dashboard", replace: true);
+            Nav.NavigateTo("admin/dashboard", replace: true);
     }
 
     private async Task HandleSubmit()
@@ -132,7 +132,7 @@
             success = true;
             StateHasChanged();
             await Task.Delay(1200);
-            Nav.NavigateTo("/admin/dashboard", replace: true);
+            Nav.NavigateTo("admin/dashboard", replace: true);
         }
         else
         {
