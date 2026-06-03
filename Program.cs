@@ -28,6 +28,7 @@ builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<PaymentService>();
 
 // ── Cross-cutting services ─────────────────────────────────────────────────────
+builder.Services.AddScoped<CarWashLocationService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SyncService>();
 builder.Services.AddScoped<FeatureToggleService>();

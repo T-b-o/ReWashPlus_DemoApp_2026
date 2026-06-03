@@ -1,3 +1,6 @@
+@using ReWashPlus_DemoApp.Services
+@inject CarWashLocationService WashLocations
+
 <div class="mx-4 mt-4">
     <div class="relative bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-5 shadow-lg overflow-hidden">
 
@@ -24,23 +27,37 @@
             </div>
             <div>
                 <p class="text-cyan-200 text-xs mb-0.5">Location</p>
-                <p class="text-white font-semibold text-sm">Fourways Mall</p>
+                <p class="text-white font-semibold text-sm">@(_lastWash?.Name ?? "Not selected")</p>
             </div>
             <div>
                 <p class="text-cyan-200 text-xs mb-0.5">Service</p>
                 <p class="text-white font-semibold text-sm">Deluxe Wash</p>
             </div>
             <div>
-                <p class="text-cyan-200 text-xs mb-0.5">Estimate</p>
-                <p class="text-white font-semibold text-sm">R80 · 45 min</p>
+                <p class="text-cyan-200 text-xs mb-0.5">Distance</p>
+                <p class="text-white font-semibold text-sm">
+                    @(_lastWash is not null ? $"{_lastWash.DistanceKm} km away" : "—")
+                </p>
             </div>
         </div>
 
         <!-- CTA button -->
-        <a href="/book"
+        <a href="@_bookHref"
            class="relative z-10 block w-full bg-white text-cyan-600 text-center font-bold py-3.5 rounded-xl text-base active:bg-gray-50 transition-colors">
-            Continue Booking
+            @(_lastWash is not null ? $"Book again at {_lastWash.Name}" : "Select Car Wash & Book")
         </a>
 
     </div>
 </div>
+
+@code {
+    private ReWashPlus_DemoApp.Services.CarWashLocation? _lastWash;
+    private string _bookHref = "/book";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var lastId = await WashLocations.GetLastUsedIdAsync();
+        _lastWash  = CarWashLocationService.GetById(lastId);
+        _bookHref  = _lastWash is not null ? $"/book?washId={_lastWash.Id}" : "/book";
+    }
+}

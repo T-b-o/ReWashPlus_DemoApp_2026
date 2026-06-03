@@ -11,7 +11,7 @@ namespace ReWashPlus_DemoApp.Pages
     /// Code-behind for BookingsHistory.razor.
     /// Uses the canonical Models.Booking type with AppointmentAt and JobStatus.
     /// </summary>
-    public partial class BookingsHistory : ComponentBase
+    public partial class BookingsHistory : ComponentBase, IDisposable
     {
         #region State
 
@@ -34,6 +34,7 @@ namespace ReWashPlus_DemoApp.Pages
         [Inject] protected NavigationManager                       Nav              { get; set; } = default!;
         [Inject] protected PageTitleService                        PageTitleService { get; set; } = default!;
         [Inject] protected ReWashPlus_DemoApp.Services.JobService  JobService       { get; set; } = default!;
+        [Inject] protected ConnectivityService                     Connectivity     { get; set; } = default!;
 
         #endregion
 
@@ -41,8 +42,16 @@ namespace ReWashPlus_DemoApp.Pages
 
         protected override async Task OnInitializedAsync()
         {
+            Connectivity.ConnectivityChanged += OnConnectivityChanged;
             _allBookings = await JobService.GetAllAsync();
         }
+
+        public void Dispose()
+        {
+            Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        }
+
+        private void OnConnectivityChanged() => InvokeAsync(StateHasChanged);
 
         #endregion
 
