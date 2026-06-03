@@ -19,18 +19,16 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
 
@@ -40,8 +38,11 @@ jobs:
       - name: Rebuild Tailwind CSS
         run: npx tailwindcss -i ./wwwroot/css/tailwind.css -o ./wwwroot/css/app.css --minify
 
+      - name: Verify CSS output
+        run: ls -lh ./wwwroot/css/app.css
+
       - name: Setup .NET 8
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
