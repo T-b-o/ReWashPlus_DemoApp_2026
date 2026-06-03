@@ -74,11 +74,11 @@
     <div class="space-y-2 text-center text-sm text-clickup-muted">
         <p>
             New staff / customer?
-            <a href="/register" class="text-clickup-accent hover:underline ml-1">Create account</a>
+            <a href="register" class="text-clickup-accent hover:underline ml-1">Create account</a>
         </p>
         <p>
             Registering a new business?
-            <a href="/register-tenant" class="text-clickup-accent hover:underline ml-1">Register company</a>
+            <a href="register-tenant" class="text-clickup-accent hover:underline ml-1">Register company</a>
         </p>
     </div>
 </div>
@@ -113,7 +113,7 @@
     private string RedirectUrl()
     {
         var role = AuthService.CurrentUser?.Role ?? ReWashPlus_DemoApp.Models.UserRole.Customer;
-        return role >= ReWashPlus_DemoApp.Models.UserRole.Staff ? "/admin/dashboard" : "/";
+        return role >= ReWashPlus_DemoApp.Models.UserRole.Staff ? "admin/dashboard" : "";
     }
 
     private class LoginModel
