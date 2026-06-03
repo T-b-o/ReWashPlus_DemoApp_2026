@@ -30,7 +30,7 @@
                 </span>
 
                 <!-- Profile icon -->
-                <a href="/profile" class="hover:text-clickup-accent transition" title="Profile">
+                <a href="profile" class="hover:text-clickup-accent transition" title="Profile">
                     <i class="fas fa-user-circle text-2xl text-clickup-muted"></i>
                 </a>
 
@@ -57,7 +57,7 @@
 
     private static readonly HashSet<string> PublicPaths = new(StringComparer.OrdinalIgnoreCase)
     {
-        "", "/", "/login", "/register", "/register-tenant"
+        "", "login", "register", "register-tenant"
     };
 
     protected override async Task OnInitializedAsync()
@@ -94,38 +94,48 @@
 
     private void GuardAuth(string url)
     {
-        var path = new Uri(url).AbsolutePath.TrimEnd('/');
+        var path = GetRoutePath(url);
         if (!AuthService.IsAuthenticated && !PublicPaths.Contains(path))
-            Nav.NavigateTo("/login", replace: true);
+            Nav.NavigateTo("login", replace: true);
     }
 
     private async Task HandleLogout()
     {
         await AuthService.LogoutAsync();
-        Nav.NavigateTo("/login", replace: true);
+        Nav.NavigateTo("login", replace: true);
     }
 
     private void UpdateTitle(string url)
     {
-        var path  = new Uri(url).AbsolutePath.ToLowerInvariant().TrimEnd('/');
+        var path  = GetRoutePath(url);
         var title = path switch
         {
-            "" or "/"                  => "Home",
-            "/book"                    => "Book a Wash",
-            "/bookings"
-            or "/my-bookings"          => "Bookings",
-            "/payments"                => "Payments",
-            "/notifications"           => "Notifications",
-            "/profile"                 => "Profile",
-            "/admin/dashboard"         => "Admin Dashboard",
-            "/admin/manage-bookings"   => "Manage Bookings",
-            "/admin/manage-payments"   => "Manage Payments",
-            "/admin/users"             => "Users",
-            "/admin/reports"           => "Reports",
-            "/admin/settings"          => "Settings",
+            ""                         => "Home",
+            "book"                     => "Book a Wash",
+            "bookings"
+            or "my-bookings"           => "Bookings",
+            "payments"                 => "Payments",
+            "notifications"            => "Notifications",
+            "profile"                  => "Profile",
+            "admin/dashboard"          => "Admin Dashboard",
+            "admin/manage-bookings"    => "Manage Bookings",
+            "admin/manage-payments"    => "Manage Payments",
+            "admin/users"              => "Users",
+            "admin/reports"            => "Reports",
+            "admin/settings"           => "Settings",
             _                          => "ReWash+"
         };
         PageTitleService.SetTitle(title);
+    }
+
+    private string GetRoutePath(string url)
+    {
+        var path = Nav.ToBaseRelativePath(url);
+        var queryIndex = path.IndexOfAny(['?', '#']);
+        if (queryIndex >= 0)
+            path = path[..queryIndex];
+
+        return path.Trim('/').ToLowerInvariant();
     }
 
     public void Dispose()

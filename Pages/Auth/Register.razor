@@ -99,8 +99,8 @@
     </EditForm>
 
     <div class="text-center text-sm text-clickup-muted space-y-1">
-        <p>Already have an account? <a href="/login" class="text-clickup-accent hover:underline">Sign in</a></p>
-        <p>Registering a new business? <a href="/register-tenant" class="text-clickup-accent hover:underline">Register company</a></p>
+        <p>Already have an account? <a href="login" class="text-clickup-accent hover:underline">Sign in</a></p>
+        <p>Registering a new business? <a href="register-tenant" class="text-clickup-accent hover:underline">Register company</a></p>
     </div>
 </div>
 
@@ -113,7 +113,7 @@
     protected override void OnInitialized()
     {
         if (AuthService.IsAuthenticated)
-            Nav.NavigateTo("/", replace: true);
+            Nav.NavigateTo("", replace: true);
     }
 
     private async Task HandleSubmit()
@@ -135,7 +135,7 @@
             success = true;
             StateHasChanged();
             await Task.Delay(1200);
-            Nav.NavigateTo("/login", replace: true);
+            Nav.NavigateTo("login", replace: true);
         }
         else
         {

@@ -18,16 +18,22 @@
 
     private static readonly TabItem[] _tabs =
     [
-        new("fas fa-house",       "Home",     "/"),
-        new("fas fa-calendar",    "Bookings", "/my-bookings"),
-        new("fas fa-credit-card", "Payments", "/payments"),
-        new("fas fa-star",        "Rewards",  "/rewards"),
+        new("fas fa-house",       "Home",          ""),
+        new("fas fa-calendar",    "Bookings",      "my-bookings"),
+        new("fas fa-credit-card", "Payments",      "payments"),
+        new("fas fa-bell",        "Notifications", "notifications"),
     ];
 
     private bool IsTabActive(string href)
     {
-        var current = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/').ToLowerInvariant();
-        var target  = href.TrimEnd('/').ToLowerInvariant();
-        return target == "" || target == "/" ? current is "" or "/" : current == target;
+        var current = Nav.ToBaseRelativePath(Nav.Uri);
+        var queryIndex = current.IndexOfAny(['?', '#']);
+        if (queryIndex >= 0)
+            current = current[..queryIndex];
+
+        current = current.Trim('/').ToLowerInvariant();
+
+        var target  = href.Trim('/').ToLowerInvariant();
+        return target == "" ? current == "" : current == target;
     }
 }

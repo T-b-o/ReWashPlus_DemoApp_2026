@@ -72,12 +72,6 @@ namespace ReWashPlus_DemoApp.Pages
 
         #region Actions
 
-        protected void ViewBooking(int id)
-            => Nav.NavigateTo($"/bookings/{id}", forceLoad: false);
-
-        protected void EditBooking(int id)
-            => Nav.NavigateTo($"/bookings/{id}/edit", forceLoad: false);
-
         protected async void CancelBooking(int id)
         {
             await JobService.CancelJobAsync(id, "Cancelled by user");
