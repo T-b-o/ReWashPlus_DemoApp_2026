@@ -19,18 +19,20 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install npm dependencies
         run: npm install
@@ -39,20 +41,12 @@ jobs:
         run: npx tailwindcss -i ./wwwroot/css/tailwind.css -o ./wwwroot/css/app.css --minify
 
       - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
       - name: Publish Blazor WASM
         run: dotnet publish ReWashPlus_DemoApp.csproj -c Release -o release --nologo
-
-      # GitHub Pages serves the app under /ReWashPlus_DemoApp_2026/
-      # so the Blazor base href must match that path.
-      - name: Fix base href for GitHub Pages
-        run: |
-          sed -i 's|<base href="/" />|<base href="/ReWashPlus_DemoApp_2026/" />|g' release/wwwroot/index.html
-          echo "✅ base href after patch:"
-          grep 'base href' release/wwwroot/index.html
 
       # Prevents GitHub's Jekyll processor from ignoring _framework/ folder
       - name: Add .nojekyll
