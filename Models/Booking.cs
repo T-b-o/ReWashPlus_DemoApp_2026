@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace ReWashPlus_DemoApp.Models
@@ -30,7 +31,7 @@ namespace ReWashPlus_DemoApp.Models
     /// Represents a job/booking for a car wash.
     /// This combines both walk-in and pre-booked scenarios.
     /// </summary>
-    public class Booking : IBranchEntity, IAuditableEntity
+    public class Booking : IBranchEntity, IAuditableEntity, IValidatableObject
     {
         // ── Core Identifiers ─────────────────────────────────────────────────
 
@@ -51,8 +52,16 @@ namespace ReWashPlus_DemoApp.Models
         // ── Customer & Vehicle Info ───────────────────────────────────────────
 
         public int    CustomerId    { get; set; }
+
+        [Required(ErrorMessage = "Full name is required")]
+        [StringLength(120, ErrorMessage = "Full name must be 120 characters or fewer")]
         public string CustomerName  { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Phone number is required")]
+        [Phone(ErrorMessage = "Enter a valid phone number")]
         public string PhoneNumber   { get; set; } = string.Empty;
+
+        [EmailAddress(ErrorMessage = "Enter a valid email address")]
         public string Email         { get; set; } = string.Empty;
 
         /// <summary>FK to Vehicle.VehicleId — preferred for all new bookings.</summary>
@@ -70,6 +79,7 @@ namespace ReWashPlus_DemoApp.Models
         // ── Service Information ───────────────────────────────────────────────
 
         /// <summary>Legacy single-service field. Use the Services list for all new bookings.</summary>
+        [Required(ErrorMessage = "Service type is required")]
         public string ServiceType { get; set; } = "Wash";
 
         public List<JobService> Services { get; set; } = new List<JobService>();
@@ -169,6 +179,16 @@ namespace ReWashPlus_DemoApp.Models
         public void RecalculateTotal()
         {
             TotalAmount = Services?.Sum(s => s.Subtotal) ?? 0;
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (AppointmentAt.Date < DateTime.Today)
+            {
+                yield return new ValidationResult(
+                    "Appointment date cannot be in the past",
+                    new[] { nameof(AppointmentAt) });
+            }
         }
     }
 }

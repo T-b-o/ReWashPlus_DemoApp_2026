@@ -3,6 +3,7 @@
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.JobService JobService
 @inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
+@inject NavigationManager Nav
 
 <div class="p-6 space-y-6">
 
@@ -77,10 +78,10 @@
         <div class="bg-clickup-light rounded-2xl shadow-clickup p-6 flex flex-col">
             <h2 class="text-xl font-bold text-clickup-accent mb-4">Quick Actions</h2>
             <div class="grid grid-cols-1 gap-4">
-                <button class="btn-primary w-full">Manage Bookings</button>
-                <button class="btn-primary w-full">Manage Payments</button>
-                <button class="btn-primary w-full">Users</button>
-                <button class="btn-primary w-full">Generate Reports</button>
+                <button class="btn-primary w-full" @onclick='() => Nav.NavigateTo("/admin/manage-bookings")'>Manage Bookings</button>
+                <button class="btn-primary w-full" @onclick='() => Nav.NavigateTo("/admin/manage-payments")'>Manage Payments</button>
+                <button class="btn-primary w-full" @onclick='() => Nav.NavigateTo("/admin/users")'>Users</button>
+                <button class="btn-primary w-full" @onclick='() => Nav.NavigateTo("/admin/reports")'>Generate Reports</button>
             </div>
         </div>
     </section>

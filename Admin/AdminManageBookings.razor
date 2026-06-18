@@ -2,6 +2,7 @@
 @using ReWashPlus_DemoApp.Models
 @inject ReWashPlus_DemoApp.Services.PageTitleService PageTitleService
 @inject ReWashPlus_DemoApp.Services.JobService JobService
+@inject NavigationManager Nav
 
 <div class="p-6 space-y-6">
 
@@ -36,6 +37,20 @@
                             @onclick="() => ApproveBooking(booking)">
                         Approve
                     </button>
+                    @if (booking.Status == JobStatus.InProgress)
+                    {
+                        <button class="btn-primary flex-1"
+                                @onclick="() => CompleteBooking(booking)">
+                            Complete
+                        </button>
+                    }
+                    @if (booking.Status == JobStatus.Completed)
+                    {
+                        <button class="btn-primary flex-1"
+                                @onclick="() => CapturePayment(booking)">
+                            Payment
+                        </button>
+                    }
                     <button class="flex-1 bg-clickup-red hover:bg-red-500 text-white font-bold py-2 rounded-xl shadow-clickup transition"
                             @onclick="() => RejectBooking(booking)">
                         Reject
@@ -71,7 +86,18 @@
                             <td class="px-6 py-3 text-clickup-text">@booking.CustomerName</td>
                             <td class="px-6 py-3 text-clickup-text">@booking.ServiceType</td>
                             <td class="px-6 py-3 text-clickup-text">@booking.AppointmentAt.ToShortDateString()</td>
-                            <td class="px-6 py-3 font-bold @GetStatusColor(booking.Status)">@booking.Status</td>
+                            <td class="px-6 py-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-bold @GetStatusColor(booking.Status)">@booking.Status</span>
+                                    @if (booking.Status == JobStatus.Completed)
+                                    {
+                                        <button class="btn-primary py-1 px-3 text-xs"
+                                                @onclick="() => CapturePayment(booking)">
+                                            Record Payment
+                                        </button>
+                                    }
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -103,6 +129,12 @@
         await LoadDataAsync();
     }
 
+    private async Task CompleteBooking(Booking booking)
+    {
+        await JobService.CompleteJobAsync(booking.Id);
+        await LoadDataAsync();
+    }
+
     private async Task RejectBooking(Booking booking)
     {
         await JobService.CancelJobAsync(booking.Id, "Rejected by admin");
@@ -112,6 +144,11 @@
     private void ViewDetails(Booking booking)
     {
         // Navigate to details when that page is ready
+    }
+
+    private void CapturePayment(Booking booking)
+    {
+        Nav.NavigateTo($"/admin/capture-payment?bookingId={booking.Id}");
     }
 
     private string GetStatusColor(JobStatus status) =>

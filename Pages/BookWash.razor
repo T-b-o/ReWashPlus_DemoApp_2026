@@ -188,6 +188,7 @@
                 <InputText @bind-Value="bookingModel.CustomerName"
                            placeholder="Full Name"
                            class="input pl-12" />
+                <ValidationMessage For="@(() => bookingModel.CustomerName)" class="text-red-400 text-xs mt-1 block" />
             </div>
 
             <!-- Phone -->
@@ -196,6 +197,7 @@
                 <InputText @bind-Value="bookingModel.PhoneNumber"
                            placeholder="Phone Number"
                            class="input pl-12" />
+                <ValidationMessage For="@(() => bookingModel.PhoneNumber)" class="text-red-400 text-xs mt-1 block" />
             </div>
 
             <!-- Email -->
@@ -204,6 +206,7 @@
                 <InputText @bind-Value="bookingModel.Email"
                            placeholder="Email"
                            class="input pl-12" />
+                <ValidationMessage For="@(() => bookingModel.Email)" class="text-red-400 text-xs mt-1 block" />
             </div>
 
             <!-- Service Type -->
@@ -215,6 +218,7 @@
                     <option value="Interior">Interior</option>
                     <option value="Full Valet">Full Valet</option>
                 </InputSelect>
+                <ValidationMessage For="@(() => bookingModel.ServiceType)" class="text-red-400 text-xs mt-1 block" />
             </div>
 
             <!-- Appointment Date -->
@@ -222,6 +226,7 @@
                 <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
                 <InputDate @bind-Value="bookingModel.AppointmentAt"
                            class="input pl-12" />
+                <ValidationMessage For="@(() => bookingModel.AppointmentAt)" class="text-red-400 text-xs mt-1 block" />
             </div>
 
             <!-- Submit Button -->
@@ -369,6 +374,7 @@
         // Persist the chosen wash so it becomes the "last-used" next time
         await WashLocations.SetLastUsedAsync(_selectedWash.Id);
 
+        bookingModel.Type = JobType.PreBooked;
         await JobService.CreateAsync(bookingModel);
 
         message = Connectivity.IsOnline
@@ -379,6 +385,7 @@
         bookingModel = new Booking
         {
             AppointmentAt = DateTime.Today.AddDays(1),
+            Type          = JobType.PreBooked,
             CustomerName  = AuthService.CurrentUser?.FullName    ?? string.Empty,
             Email         = AuthService.CurrentUser?.Email       ?? string.Empty,
             PhoneNumber   = AuthService.CurrentUser?.PhoneNumber ?? string.Empty,

@@ -35,18 +35,24 @@ namespace ReWashPlus_DemoApp.Services
         /// </summary>
         public async Task InitializeAsync()
         {
-            _cachedServices = await _localStorage.GetItemAsync<List<Service>>(ServicesKey);
+            _cachedServices = await _localStorage.GetItemAsync<List<Service>>(ServicesKey)
+                              ?? new List<Service>();
             
-            // If no cached services, seed with defaults
-            if (_cachedServices == null || !_cachedServices.Any())
+            var hasServicesForCurrentBranch = _cachedServices.Any(s =>
+                s.TenantId == _tenantContext.TenantId &&
+                s.BranchId == _tenantContext.BranchId);
+
+            // Seed defaults per tenant/branch so new businesses have a usable catalog.
+            if (!hasServicesForCurrentBranch)
             {
-                _cachedServices = GetDefaultServices();
-                // Stamp default services with the current tenant/branch context
-                foreach (var svc in _cachedServices)
+                var defaults = GetDefaultServices();
+                foreach (var svc in defaults)
                 {
                     svc.TenantId = _tenantContext.TenantId;
                     svc.BranchId = _tenantContext.BranchId;
                 }
+
+                _cachedServices.AddRange(defaults);
                 await PersistAsync();
             }
         }
@@ -71,7 +77,11 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<Service?> GetByIdAsync(int id)
         {
             await EnsureInitializedAsync();
-            return _cachedServices?.FirstOrDefault(s => s.Id == id && s.IsActive);
+            return _cachedServices?.FirstOrDefault(s =>
+                s.Id == id &&
+                s.IsActive &&
+                s.TenantId == _tenantContext.TenantId &&
+                s.BranchId == _tenantContext.BranchId);
         }
 
         /// <summary>
@@ -84,7 +94,11 @@ namespace ReWashPlus_DemoApp.Services
                 return await GetAllAsync();
 
             return _cachedServices?
-                .Where(s => s.IsActive && s.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Where(s =>
+                    s.IsActive &&
+                    s.TenantId == _tenantContext.TenantId &&
+                    s.BranchId == _tenantContext.BranchId &&
+                    s.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
                 .ToList() ?? new List<Service>();
         }
 

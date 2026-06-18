@@ -114,7 +114,9 @@ namespace ReWashPlus_DemoApp.Services
         {
             await EnsureInitializedAsync();
 
-            var existing = _cachedVehicles?.FirstOrDefault(v => v.Id == vehicle.Id);
+            var existing = _cachedVehicles?.FirstOrDefault(v =>
+                v.Id == vehicle.Id &&
+                v.TenantId == _tenantContext.TenantId);
             if (existing is null) return null;
 
             existing.CustomerId         = vehicle.CustomerId;
@@ -136,7 +138,9 @@ namespace ReWashPlus_DemoApp.Services
         {
             await EnsureInitializedAsync();
 
-            var vehicle = _cachedVehicles?.FirstOrDefault(v => v.Id == id);
+            var vehicle = _cachedVehicles?.FirstOrDefault(v =>
+                v.Id == id &&
+                v.TenantId == _tenantContext.TenantId);
             if (vehicle is null) return false;
 
             vehicle.IsActive   = false;

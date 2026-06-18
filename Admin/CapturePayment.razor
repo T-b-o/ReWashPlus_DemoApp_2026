@@ -1,0 +1,151 @@
+@page "/admin/capture-payment"
+@using System.ComponentModel.DataAnnotations
+@using ReWashPlus_DemoApp.Models
+@inject ReWashPlus_DemoApp.Services.JobService JobService
+@inject ReWashPlus_DemoApp.Services.PaymentService PaymentService
+@inject NavigationManager Nav
+
+<div class="p-6 space-y-6">
+    <header>
+        <h1 class="text-4xl font-bold text-clickup-accent">Capture Payment</h1>
+        <p class="text-clickup-muted">Record payment for a completed booking.</p>
+    </header>
+
+    @if (_booking is null)
+    {
+        <div class="bg-clickup-light border border-clickup-border rounded-xl p-6 text-clickup-muted">
+            Booking not found.
+        </div>
+    }
+    else
+    {
+        <section class="bg-clickup-light border border-clickup-border rounded-xl shadow-clickup p-6 space-y-4 max-w-lg">
+            <div class="bg-clickup-surface rounded-xl p-4 space-y-1">
+                <p class="text-clickup-muted text-xs uppercase tracking-wider">Booking</p>
+                <p class="text-clickup-text font-bold">#@_booking.Id - @_booking.CustomerName</p>
+                <p class="text-clickup-muted text-sm">@_booking.ServiceType</p>
+                <p class="text-clickup-muted text-sm">Status: @_booking.Status</p>
+            </div>
+
+            @if (_existingPayments.Any())
+            {
+                <div class="bg-green-900/30 border border-green-500 rounded-xl p-4 text-green-300 text-sm">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    This booking already has @(_existingPayments.Count) payment record(s).
+                </div>
+            }
+
+            @if (_booking.Status != JobStatus.Completed)
+            {
+                <div class="bg-red-900/30 border border-red-500 rounded-xl p-4 text-red-300 text-sm">
+                    Complete the booking before recording payment.
+                </div>
+            }
+            else
+            {
+                <EditForm Model="_model" OnValidSubmit="RecordPaymentAsync" class="space-y-4">
+                    <DataAnnotationsValidator />
+
+                    <div>
+                        <label class="text-clickup-muted text-xs uppercase tracking-wider mb-1 block">Amount</label>
+                        <InputNumber @bind-Value="_model.Amount" class="input" />
+                        <ValidationMessage For="@(() => _model.Amount)" class="text-red-400 text-xs mt-1 block" />
+                    </div>
+
+                    <div>
+                        <label class="text-clickup-muted text-xs uppercase tracking-wider mb-1 block">Method</label>
+                        <InputSelect @bind-Value="_model.Method" class="input">
+                            <option value="@PaymentMethod.Cash">Cash</option>
+                            <option value="@PaymentMethod.Card">Card</option>
+                            <option value="@PaymentMethod.EFT">EFT</option>
+                        </InputSelect>
+                    </div>
+
+                    <div>
+                        <label class="text-clickup-muted text-xs uppercase tracking-wider mb-1 block">Reference</label>
+                        <InputText @bind-Value="_model.Reference" class="input" placeholder="Receipt, card, or EFT reference" />
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_message))
+                    {
+                        <div class="bg-clickup-accent/10 border border-clickup-accent/30 rounded-xl p-4 text-clickup-text text-sm">
+                            @_message
+                        </div>
+                    }
+
+                    <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="btn-primary" disabled="@_isSaving">
+                            <i class="fas fa-credit-card mr-2"></i>
+                            @(_isSaving ? "Saving..." : "Record Payment")
+                        </button>
+                        <button type="button" class="btn-secondary" @onclick='() => Nav.NavigateTo("/admin/manage-bookings")'>
+                            Back
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "bookingId")]
+    public int BookingId { get; set; }
+
+    private Booking? _booking;
+    private List<Payment> _existingPayments = new();
+    private PaymentCaptureModel _model = new();
+    private bool _isSaving;
+    private string _message = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _booking = await JobService.GetByIdAsync(BookingId);
+        _existingPayments = await PaymentService.GetByJobIdAsync(BookingId);
+
+        if (_booking is not null)
+        {
+            _model.Amount = _booking.TotalAmount > 0
+                ? _booking.TotalAmount
+                : EstimateAmount(_booking.ServiceType);
+        }
+    }
+
+    private async Task RecordPaymentAsync()
+    {
+        if (_booking is null)
+            return;
+
+        _isSaving = true;
+        _message = string.Empty;
+
+        await PaymentService.RecordPaymentAsync(
+            _booking.Id,
+            _model.Amount,
+            _model.Method,
+            _model.Reference);
+
+        _existingPayments = await PaymentService.GetByJobIdAsync(_booking.Id);
+        _message = "Payment recorded locally and queued for sync.";
+        _isSaving = false;
+    }
+
+    private static decimal EstimateAmount(string serviceType) =>
+        serviceType switch
+        {
+            "Interior" => 200m,
+            "Full Valet" => 500m,
+            _ => 150m
+        };
+
+    private sealed class PaymentCaptureModel
+    {
+        [Range(0.01, 999999, ErrorMessage = "Amount must be greater than zero")]
+        public decimal Amount { get; set; }
+
+        public PaymentMethod Method { get; set; } = PaymentMethod.Cash;
+
+        [StringLength(100, ErrorMessage = "Reference must be 100 characters or fewer")]
+        public string Reference { get; set; } = string.Empty;
+    }
+}

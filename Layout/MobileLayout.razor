@@ -188,6 +188,8 @@
     private static readonly HashSet<string> PublicPaths =
         new(StringComparer.OrdinalIgnoreCase) { "", "/", "/login", "/register", "/register-tenant" };
 
+    private static readonly string AdminPathPrefix = "/admin";
+
     protected override async Task OnInitializedAsync()
     {
         Nav.LocationChanged          += OnLocationChanged;
@@ -230,8 +232,18 @@
     private void GuardAuth(string url)
     {
         var path = new Uri(url).AbsolutePath.TrimEnd('/');
+
         if (!AuthService.IsAuthenticated && !PublicPaths.Contains(path))
+        {
             Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        if (path.StartsWith(AdminPathPrefix, StringComparison.OrdinalIgnoreCase) &&
+            AuthService.CurrentUser?.Role < UserRole.BranchManager)
+        {
+            Nav.NavigateTo("/", replace: true);
+        }
     }
 
     private void OpenMenu()      { _isMenuOpen = true;  _isProfileOpen = false; }

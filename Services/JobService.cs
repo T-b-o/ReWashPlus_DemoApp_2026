@@ -59,7 +59,13 @@ namespace ReWashPlus_DemoApp.Services
             var all = new List<Booking>();
             all.AddRange(_pendingJobs ?? new List<Booking>());
             all.AddRange(_syncedJobs ?? new List<Booking>());
-            return all.OrderByDescending(j => j.CreatedAt).ToList();
+
+            return all
+                .Where(j =>
+                    j.TenantId == _tenantContext.TenantId &&
+                    j.BranchId == _tenantContext.BranchId)
+                .OrderByDescending(j => j.CreatedAt)
+                .ToList();
         }
 
         /// <summary>
@@ -90,7 +96,11 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<List<Booking>> GetPendingAsync()
         {
             await EnsureInitializedAsync();
-            return _pendingJobs ?? new List<Booking>();
+            return (_pendingJobs ?? new List<Booking>())
+                .Where(j =>
+                    j.TenantId == _tenantContext.TenantId &&
+                    j.BranchId == _tenantContext.BranchId)
+                .ToList();
         }
 
         /// <summary>
@@ -99,7 +109,11 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<List<Booking>> GetSyncedAsync()
         {
             await EnsureInitializedAsync();
-            return _syncedJobs ?? new List<Booking>();
+            return (_syncedJobs ?? new List<Booking>())
+                .Where(j =>
+                    j.TenantId == _tenantContext.TenantId &&
+                    j.BranchId == _tenantContext.BranchId)
+                .ToList();
         }
 
         /// <summary>
@@ -163,7 +177,7 @@ namespace ReWashPlus_DemoApp.Services
         {
             await EnsureInitializedAsync();
 
-            var existing = (await GetAllAsync()).FirstOrDefault(j => j.Id == job.Id);
+            var existing = FindStoredJob(job.Id);
             if (existing == null)
                 return null;
 
@@ -177,6 +191,7 @@ namespace ReWashPlus_DemoApp.Services
             existing.SyncState             = SyncStatus.Pending;
             existing.UpdatedAt             = DateTime.UtcNow;
 
+            MoveToPendingIfNeeded(existing);
             await PersistAsync();
             return existing;
         }
@@ -349,6 +364,33 @@ namespace ReWashPlus_DemoApp.Services
             all.AddRange(_pendingJobs ?? new List<Booking>());
             all.AddRange(_syncedJobs ?? new List<Booking>());
             return (all.Max(j => (int?)j.Id) ?? 0) + 1;
+        }
+
+        /// <summary>
+        /// Finds a booking in the backing collections without creating a detached copy.
+        /// The tenant and branch checks prevent cross-tenant edits from browser storage.
+        /// </summary>
+        private Booking? FindStoredJob(int id)
+        {
+            return (_pendingJobs ?? new List<Booking>())
+                .Concat(_syncedJobs ?? new List<Booking>())
+                .FirstOrDefault(j =>
+                    j.Id == id &&
+                    j.TenantId == _tenantContext.TenantId &&
+                    j.BranchId == _tenantContext.BranchId);
+        }
+
+        /// <summary>
+        /// A synced record edited offline must re-enter the pending queue so the
+        /// next sync cycle uploads the changed version.
+        /// </summary>
+        private void MoveToPendingIfNeeded(Booking job)
+        {
+            if (_pendingJobs?.Any(j => j.Id == job.Id) == true)
+                return;
+
+            if (_syncedJobs?.Remove(job) == true)
+                _pendingJobs?.Add(job);
         }
 
         /// <summary>

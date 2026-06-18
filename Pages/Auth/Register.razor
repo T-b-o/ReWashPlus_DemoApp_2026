@@ -63,7 +63,7 @@
         <div class="relative">
             <i class="fas fa-key absolute left-3 top-1/2 -translate-y-1/2 text-clickup-accent"></i>
             <InputText @bind-Value="model.CompanySlug"
-                       placeholder="Company Code (optional — ask your manager)"
+                       placeholder="Company Code (optional - ask your manager)"
                        class="input pl-10" />
         </div>
         <p class="text-xs text-clickup-muted -mt-2">
@@ -80,7 +80,7 @@
         @if (success)
         {
             <div class="bg-green-900/30 border border-green-500 text-green-300 rounded-lg p-3 text-sm">
-                <i class="fas fa-check-circle mr-2"></i>Account created! Redirecting to sign in…
+                <i class="fas fa-check-circle mr-2"></i>Account created! Redirecting to sign in...
             </div>
         }
 
@@ -88,7 +88,7 @@
             @if (isLoading)
             {
                 <i class="fas fa-spinner fa-spin"></i>
-                <span>Creating account…</span>
+                <span>Creating account...</span>
             }
             else
             {

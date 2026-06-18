@@ -51,7 +51,12 @@ namespace ReWashPlus_DemoApp.Services
             var all = new List<Payment>();
             all.AddRange(_pendingPayments ?? new List<Payment>());
             all.AddRange(_syncedPayments ?? new List<Payment>());
-            return all.OrderByDescending(p => p.CreatedAt).ToList();
+            return all
+                .Where(p =>
+                    p.TenantId == _tenantContext.TenantId &&
+                    p.BranchId == _tenantContext.BranchId)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToList();
         }
 
         /// <summary>
@@ -78,7 +83,11 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<List<Payment>> GetPendingAsync()
         {
             await EnsureInitializedAsync();
-            return _pendingPayments ?? new List<Payment>();
+            return (_pendingPayments ?? new List<Payment>())
+                .Where(p =>
+                    p.TenantId == _tenantContext.TenantId &&
+                    p.BranchId == _tenantContext.BranchId)
+                .ToList();
         }
 
         /// <summary>
@@ -87,7 +96,11 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<List<Payment>> GetSyncedAsync()
         {
             await EnsureInitializedAsync();
-            return _syncedPayments ?? new List<Payment>();
+            return (_syncedPayments ?? new List<Payment>())
+                .Where(p =>
+                    p.TenantId == _tenantContext.TenantId &&
+                    p.BranchId == _tenantContext.BranchId)
+                .ToList();
         }
 
         /// <summary>
@@ -96,6 +109,9 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<Payment> RecordPaymentAsync(int jobId, decimal amount, PaymentMethod method, string? reference = null)
         {
             await EnsureInitializedAsync();
+
+            if (amount <= 0)
+                throw new ArgumentOutOfRangeException(nameof(amount), "Payment amount must be greater than zero.");
 
             var payment = new Payment
             {
@@ -135,7 +151,9 @@ namespace ReWashPlus_DemoApp.Services
                 payment.PaidAt = DateTime.UtcNow;
             }
             payment.UpdatedAt = DateTime.UtcNow;
+            payment.SyncState = SyncStatus.Pending;
 
+            MoveToPendingIfNeeded(payment);
             await PersistAsync();
             return payment;
         }
@@ -227,6 +245,18 @@ namespace ReWashPlus_DemoApp.Services
             all.AddRange(_pendingPayments ?? new List<Payment>());
             all.AddRange(_syncedPayments ?? new List<Payment>());
             return (all.Max(p => (int?)p.Id) ?? 0) + 1;
+        }
+
+        /// <summary>
+        /// Keeps edited synced payments eligible for the next offline sync.
+        /// </summary>
+        private void MoveToPendingIfNeeded(Payment payment)
+        {
+            if (_pendingPayments?.Any(p => p.Id == payment.Id) == true)
+                return;
+
+            if (_syncedPayments?.Remove(payment) == true)
+                _pendingPayments?.Add(payment);
         }
 
         /// <summary>

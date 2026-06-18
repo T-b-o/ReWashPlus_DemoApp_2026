@@ -72,7 +72,7 @@ namespace ReWashPlus_DemoApp.Pages
 
         #region Actions
 
-        protected async void CancelBooking(int id)
+        protected async Task CancelBooking(int id)
         {
             await JobService.CancelJobAsync(id, "Cancelled by user");
             var booking = _allBookings.FirstOrDefault(b => b.Id == id);

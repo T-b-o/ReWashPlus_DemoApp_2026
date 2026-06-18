@@ -72,15 +72,16 @@ namespace ReWashPlus_DemoApp.Services
         {
             await EnsureInitializedAsync();
             if (string.IsNullOrWhiteSpace(query))
-                return _cachedCustomers ?? new List<Customer>();
+                return await GetAllAsync();
 
-            var lowerQuery = query.ToLowerInvariant();
             return _cachedCustomers?
                 .Where(c =>
-                    c.PhoneNumber.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                    c.FirstName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                    c.LastName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                    c.Email.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    c.TenantId == _tenantContext.TenantId &&
+                    c.IsActive &&
+                    (c.PhoneNumber.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                     c.FirstName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                     c.LastName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                     c.Email.Contains(query, StringComparison.OrdinalIgnoreCase))
                 )
                 .ToList() ?? new List<Customer>();
         }
@@ -91,7 +92,10 @@ namespace ReWashPlus_DemoApp.Services
         public async Task<Customer?> GetByPhoneAsync(string phoneNumber)
         {
             await EnsureInitializedAsync();
-            return _cachedCustomers?.FirstOrDefault(c => c.PhoneNumber == phoneNumber);
+            return _cachedCustomers?.FirstOrDefault(c =>
+                c.PhoneNumber == phoneNumber &&
+                c.TenantId == _tenantContext.TenantId &&
+                c.IsActive);
         }
 
         /// <summary>
@@ -128,7 +132,9 @@ namespace ReWashPlus_DemoApp.Services
         {
             await EnsureInitializedAsync();
 
-            var existing = _cachedCustomers?.FirstOrDefault(c => c.Id == customer.Id);
+            var existing = _cachedCustomers?.FirstOrDefault(c =>
+                c.Id == customer.Id &&
+                c.TenantId == _tenantContext.TenantId);
             if (existing == null)
                 return null;
 
@@ -140,6 +146,7 @@ namespace ReWashPlus_DemoApp.Services
             existing.PreferredPaymentMethod = customer.PreferredPaymentMethod;
             existing.TotalSpent = customer.TotalSpent;
             existing.LoyaltyPoints = customer.LoyaltyPoints;
+            existing.SyncState = SyncStatus.Pending;
             existing.UpdatedAt = DateTime.UtcNow;
 
             await PersistAsync();
@@ -153,11 +160,14 @@ namespace ReWashPlus_DemoApp.Services
         {
             await EnsureInitializedAsync();
 
-            var customer = _cachedCustomers?.FirstOrDefault(c => c.Id == id);
+            var customer = _cachedCustomers?.FirstOrDefault(c =>
+                c.Id == id &&
+                c.TenantId == _tenantContext.TenantId);
             if (customer == null)
                 return false;
 
             customer.IsActive = false;
+            customer.SyncState = SyncStatus.Pending;
             customer.UpdatedAt = DateTime.UtcNow;
             await PersistAsync();
 
